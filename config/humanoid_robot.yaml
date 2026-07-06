@@ -1,0 +1,51 @@
+module_name: "蝗虫计划 · 人形机器人产业链模块"
+sector_name: "人形机器人 / 具身智能"
+positioning: "AI长期主义外延板块"
+data_sources:
+  a_share_market: "AKShare"
+  a_share_flow: "Eastmoney"
+  global_market: "Futu OpenAPI"
+  news_and_events:
+    - "金十数据"
+    - "豆包"
+    - "DeepSeek"
+    - "公告"
+    - "研报"
+    - "招股书"
+    - "年报/半年报/投资者关系记录"
+sync:
+  interval_seconds: 180
+  market_state_aware: true
+  static_state_note: "非交易日引用最近交易日收盘数据，不生成新K线"
+scoring:
+  humanoid_score:
+    business_purity: 0.25
+    technical_barrier: 0.20
+    order_progress: 0.20
+    localization_space: 0.15
+    cost_weight: 0.10
+    earnings_certainty: 0.10
+  tiers:
+    core: ">=80 核心标的"
+    watch: "60-80 观察标的"
+    concept: "40-60 概念标的"
+    forbidden: "<40 剔除或禁买"
+ui:
+  mobile_first: true
+  default_collapsed: true
+  required_sections:
+    - "人形机器人总览"
+    - "2026成本结构"
+    - "四大模块成本权重"
+    - "子板块热力图"
+    - "A股标的池"
+    - "Top Picks"
+    - "Fibonacci买卖点"
+    - "AI自动分析"
+    - "数据来源与更新时间"
+rules:
+  forbid_ai_price: true
+  forbid_research_price_as_realtime: true
+  forbid_unsourced_cost_row: true
+  require_fib_structure_for_trade_points: true
+  require_auto_ai_analysis: true

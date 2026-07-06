@@ -1,0 +1,24 @@
+module,sub_module,cost_ratio_low,cost_ratio_high,cost_amount_low,cost_amount_high,domestic_rate,price_trend,cost_downside_space,technical_barrier,source_name,source_type,publish_date,url_or_page,confidence_score
+执行器 / 伺服系统,一体化关节模组,45,60,22500,36000,中,下降,高,高,平安证券《人形机器人系列专题（二）执行系统之旋转关节：扭矩跃升，动力内核》,券商研报,2025-03-17,https://pdf.dfcfw.com/pdf/H3_AP202503171644440150_1.pdf,86
+执行器 / 伺服系统,电机,6,10,3000,6000,中高,下降,中,中高,财联社《机器人的关节——精密执行器》,权威媒体,2023-06-25,https://www.cls.cn/detail/1388876,78
+执行器 / 伺服系统,减速器,10,18,5000,10800,中,下降,高,高,财联社《机器人的关节——精密执行器》,权威媒体,2023-06-25,https://www.cls.cn/detail/1388876,78
+执行器 / 伺服系统,丝杠,8,15,4000,9000,低,下降,高,高,McKinsey《Turning humanoid supply chain constraints into billion-dollar wins》,咨询报告,2026-05-01,https://www.mckinsey.com/industries/industrials/our-insights/turning-humanoid-supply-chain-constraints-into-billion-dollar-wins,82
+执行器 / 伺服系统,编码器,2,4,1000,2400,中,下降,中,中,平安证券《人形机器人系列专题（二）执行系统之旋转关节：扭矩跃升，动力内核》,券商研报,2025-03-17,https://pdf.dfcfw.com/pdf/H3_AP202503171644440150_1.pdf,82
+执行器 / 伺服系统,驱动器,4,8,2000,4800,中高,下降,中,中高,财联社《机器人的关节——精密执行器》,权威媒体,2023-06-25,https://www.cls.cn/detail/1388876,76
+控制器 / 计算系统,主控芯片,3,7,1500,4200,中,平稳,中,中高,MCR嘉世咨询《人形机器人》,行业报告,2025-02-17,https://chinamcr.com/report-jp/reportjp20250217.pdf,72
+控制器 / 计算系统,运动控制器,3,6,1500,3600,中高,下降,中,中高,财联社《机器人的关节——精密执行器》,权威媒体,2023-06-25,https://www.cls.cn/detail/1388876,74
+控制器 / 计算系统,域控制器,2,5,1000,3000,中,平稳,中,高,MCR嘉世咨询《人形机器人》,行业报告,2025-02-17,https://chinamcr.com/report-jp/reportjp20250217.pdf,70
+控制器 / 计算系统,边缘计算模块,3,8,1500,4800,中,平稳,中,高,McKinsey《Turning humanoid supply chain constraints into billion-dollar wins》,咨询报告,2026-05-01,https://www.mckinsey.com/industries/industrials/our-insights/turning-humanoid-supply-chain-constraints-into-billion-dollar-wins,74
+传感器系统,六维力传感器,3,8,1500,4800,低,下降,高,高,MCR嘉世咨询《人形机器人》,行业报告,2025-02-17,https://chinamcr.com/report-jp/reportjp20250217.pdf,74
+传感器系统,力矩传感器,2,6,1000,3600,中,下降,中高,高,平安证券《人形机器人系列专题（二）执行系统之旋转关节：扭矩跃升，动力内核》,券商研报,2025-03-17,https://pdf.dfcfw.com/pdf/H3_AP202503171644440150_1.pdf,78
+传感器系统,视觉传感器,3,7,1500,4200,中,下降,中,中高,MCR嘉世咨询《人形机器人》,行业报告,2025-02-17,https://chinamcr.com/report-jp/reportjp20250217.pdf,70
+传感器系统,IMU,1,3,500,1800,中高,下降,中,中,MCR嘉世咨询《人形机器人》,行业报告,2025-02-17,https://chinamcr.com/report-jp/reportjp20250217.pdf,68
+传感器系统,触觉传感器,2,5,1000,3000,低,下降,高,高,McKinsey《Turning humanoid supply chain constraints into billion-dollar wins》,咨询报告,2026-05-01,https://www.mckinsey.com/industries/industrials/our-insights/turning-humanoid-supply-chain-constraints-into-billion-dollar-wins,72
+结构件 / 轻量化系统,关节结构件,4,8,2000,4800,中高,下降,中,中高,上市公司公告/年报/投资者关系记录汇总,上市公司资料,2026-07-05,公告/年报/互动易/投资者关系记录,65
+结构件 / 轻量化系统,精密加工件,4,9,2000,5400,中高,下降,中,中高,上市公司公告/年报/投资者关系记录汇总,上市公司资料,2026-07-05,公告/年报/互动易/投资者关系记录,65
+结构件 / 轻量化系统,壳体,2,5,1000,3000,高,下降,中,中,上市公司公告/年报/投资者关系记录汇总,上市公司资料,2026-07-05,公告/年报/互动易/投资者关系记录,62
+结构件 / 轻量化系统,铝合金 / 镁合金,2,5,1000,3000,高,平稳,低,中,上市公司公告/年报/投资者关系记录汇总,上市公司资料,2026-07-05,公告/年报/互动易/投资者关系记录,62
+结构件 / 轻量化系统,碳纤维 / 轻量化材料,2,6,1000,3600,中,下降,中,中高,上市公司公告/年报/投资者关系记录汇总,上市公司资料,2026-07-05,公告/年报/互动易/投资者关系记录,60
+电池 / 电源系统,电池包 / BMS,4,8,2000,4800,高,下降,中,中,University of Cincinnati OLLI《Exploring Humanoid Robots Costs and Affordability V》,公开课资料,2025-03-01,https://www.uc.edu/content/dam/refresh/cont-ed-62/olli/s25-handouts/exploring%20humanoid%20robots%205.pdf,68
+通信 / 线束,高速线束 / 连接器,2,5,1000,3000,中高,平稳,低,中,上市公司公告/年报/投资者关系记录汇总,上市公司资料,2026-07-05,公告/年报/互动易/投资者关系记录,62
+其他,装配 / 标定 / 软件摊销,8,15,4000,9000,中,下降,高,中,University of Cincinnati OLLI《Exploring Humanoid Robots Costs and Affordability V》,公开课资料,2025-03-01,https://www.uc.edu/content/dam/refresh/cont-ed-62/olli/s25-handouts/exploring%20humanoid%20robots%205.pdf,66

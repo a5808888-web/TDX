@@ -1,0 +1,8 @@
+source_id,source_name,source_type,publish_date,url_or_page,coverage,confidence_score
+SRC001,平安证券《人形机器人系列专题（二）执行系统之旋转关节：扭矩跃升，动力内核》,券商研报,2025-03-17,https://pdf.dfcfw.com/pdf/H3_AP202503171644440150_1.pdf,执行器成本占比与旋转/线性执行器拆解,86
+SRC002,财联社《机器人的关节——精密执行器》,权威媒体,2023-06-25,https://www.cls.cn/detail/1388876,工业机器人执行器/伺服/控制器成本结构参考与Optimus执行器构成,78
+SRC003,McKinsey《Turning humanoid supply chain constraints into billion-dollar wins》,咨询报告,2026-05-01,https://www.mckinsey.com/industries/industrials/our-insights/turning-humanoid-supply-chain-constraints-into-billion-dollar-wins,人形机器人供应链约束与执行器核心部件,82
+SRC004,MCR嘉世咨询《人形机器人》,行业报告,2025-02-17,https://chinamcr.com/report-jp/reportjp20250217.pdf,线性执行器与旋转执行器构成,74
+SRC005,University of Cincinnati OLLI《Exploring Humanoid Robots Costs and Affordability V》,公开课资料,2025-03-01,https://www.uc.edu/content/dam/refresh/cont-ed-62/olli/s25-handouts/exploring%20humanoid%20robots%205.pdf,Optimus Gen2 BOM区间与成本框架,70
+SRC006,Firgelli《Humanoid Robot Actuators: The Complete Engineering Guide》,工程资料,2026-02-01,https://www.firgelli.com/pages/humanoid-robot-actuators,执行器工程约束、滚柱丝杠与传动方案,68
+SRC007,上市公司公告/年报/投资者关系记录汇总,上市公司资料,2026-07-05,公告/年报/互动易/投资者关系记录,订单/送样/量产进展与业务纯度验证,65

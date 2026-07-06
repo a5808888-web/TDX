@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>蝗虫计划 V7 手机交易驾驶舱</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./trading_cockpit.css" />
+  </head>
+  <body>
+    <header id="topStatusBar" class="top-status-bar" aria-label="市场状态">
+      <section class="decision-hero" aria-label="决策层">
+        <div class="decision-label">当前动作</div>
+        <div class="decision-value">同步中</div>
+        <div class="decision-note">正在连接 AKShare / 东方财富 / 富途接口</div>
+      </section>
+      <section class="market-state-row" aria-label="市场状态层">
+        <div class="market-state-card">
+          <span>A股状态</span>
+          <strong>等待行情</strong>
+        </div>
+        <div class="market-state-card">
+          <span>全球状态</span>
+          <strong>等待行情</strong>
+        </div>
+        <div class="market-state-card wide">
+          <span>今日总判断</span>
+          <strong>正在同步，先不交易</strong>
+        </div>
+      </section>
+      <section class="risk-strip" aria-label="风控层">
+        <div><span>资金强度</span><strong>--</strong></div>
+        <div><span>风险强度</span><strong>--</strong></div>
+        <div><span>数据时间</span><strong>同步中</strong></div>
+      </section>
+    </header>
+
+    <main class="mobile-cockpit" aria-label="蝗虫计划 V7 手机交易驾驶舱">
+      <section id="today" class="module-shell">
+        <details class="collapse-card" open>
+          <summary id="todaySummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">今日总判断</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">正在同步行情，未确认前不交易。</div>
+              <div class="summary-meta"><span>数据源：AKShare / 东方财富 / 富途接口</span><span>状态：同步中</span></div>
+            </div>
+          </summary>
+          <div id="todayDecisionPanel" class="module-body">
+            <div class="info-grid">
+              <div class="info-item"><div class="info-label">当前动作</div><div class="info-value">观察</div></div>
+              <div class="info-item"><div class="info-label">数据状态</div><div class="info-value">同步中</div></div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section id="core-pool" class="module-shell">
+        <details class="collapse-card" open>
+          <summary id="corePoolSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">长期核心推荐池</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">等待热力图、机构资金、斐波那契和智能分析汇总。</div>
+              <div class="summary-meta"><span>数据源：AKShare / 东方财富 / 富途接口</span><span>状态：同步中</span></div>
+            </div>
+          </summary>
+          <div id="corePoolPanel" class="core-pool-panel module-body"></div>
+        </details>
+      </section>
+
+      <section id="lucky-zone" class="module-shell">
+        <details class="collapse-card" open>
+          <summary id="luckyZoneSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">幸运区核心资产</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">等待产业地位、资金、长周期斐波那契和趋势稳定性确认。</div>
+              <div class="summary-meta"><span>数据源：AKShare / 东方财富 / 富途接口 / DeepSeek / 豆包</span><span>状态：同步中</span></div>
+            </div>
+          </summary>
+          <div id="luckyZonePanel" class="lucky-zone-panel module-body"></div>
+        </details>
+      </section>
+
+      <section id="one-click" class="module-shell">
+        <details class="collapse-card" open>
+          <summary id="oneClickSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">今日交易决策</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">等待行情、热力图、机构资金、斐波那契和智能分析汇总。</div>
+            </div>
+          </summary>
+          <div id="oneClickExecutionPanel" class="one-click-panel module-body"></div>
+        </details>
+      </section>
+
+      <section id="sync" class="module-shell">
+        <details class="collapse-card" open>
+          <summary id="syncSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">数据同步状态</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">正在获取真实行情，价格未锁定前禁止生成交易动作。</div>
+              <div class="summary-meta"><span>来源：AKShare / 富途</span><span>状态：同步中</span></div>
+            </div>
+          </summary>
+          <div id="dataStatusPanel" class="data-status-grid module-body">
+            <article class="data-status-card">
+              <div class="card-head"><span class="status-dot delayed"></span><div class="card-title">A股数据</div><div class="card-action">同步中</div></div>
+              <div class="card-lines">
+                <div class="line-item">来源<strong>AKShare</strong></div>
+                <div class="line-item">价格锁<strong>等待原始价格</strong></div>
+              </div>
+            </article>
+          </div>
+        </details>
+      </section>
+
+      <section id="heatmap" class="module-shell">
+        <details class="collapse-card">
+          <summary id="heatmapSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">交易员热力图</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">等待资金流和成交量同步。</div>
+            </div>
+          </summary>
+          <div id="marketHeatmapPanel" class="module-body"></div>
+        </details>
+      </section>
+
+      <section id="institution" class="module-shell">
+        <details class="collapse-card">
+          <summary id="institutionSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">机构资金流</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">等待富途机构追踪、北向资金和公募调仓同步。</div>
+            </div>
+          </summary>
+          <div id="institutionPanel" class="institution-panel module-body"></div>
+        </details>
+      </section>
+
+      <section id="universe" class="module-shell">
+        <details class="collapse-card">
+          <summary id="universeSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">选股池</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">等待股票池价格锁定。</div>
+            </div>
+          </summary>
+          <div id="stockUniverse" class="universe-list module-body"></div>
+        </details>
+      </section>
+
+      <section id="top-picks" class="module-shell">
+        <details class="collapse-card">
+          <summary id="topPicksSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">重点候选</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">真实价格返回后生成候选。</div>
+            </div>
+          </summary>
+          <div id="signalList" class="signal-list module-body"></div>
+        </details>
+      </section>
+
+      <section id="fib" class="module-shell">
+        <details class="collapse-card">
+          <summary id="fibSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">斐波那契分析</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">价格锁定后才计算锚点和买卖点。</div>
+            </div>
+          </summary>
+          <div id="anchorModePanel" class="anchor-mode-grid module-body"></div>
+          <div id="fibonacciPanel" class="fib-list module-body"></div>
+        </details>
+      </section>
+
+      <section id="ai" class="module-shell">
+        <details class="collapse-card">
+          <summary id="aiSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">智能分析</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">等待行情同步后自动分析。</div>
+            </div>
+          </summary>
+          <div id="aiAnalysisPanel" class="ai-list module-body"></div>
+        </details>
+      </section>
+
+      <section id="account" class="module-shell">
+        <details class="collapse-card" open>
+          <summary id="accountSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">账户执行区</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">同步完成前保持观察。</div>
+            </div>
+          </summary>
+          <div id="accountPanel" class="account-panel module-body"></div>
+        </details>
+      </section>
+
+      <section id="change-log" class="module-shell">
+        <details class="collapse-card" open>
+          <summary id="changeLogSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">动态重算日志</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">每次同步后记录板块、股票、买点、智能分析和幸运区变化。</div>
+              <div class="summary-meta"><span>数据源：全系统同步流水线</span><span>状态：同步中</span></div>
+            </div>
+          </summary>
+          <div id="changeLogPanel" class="change-log-panel module-body"></div>
+        </details>
+      </section>
+
+      <section id="risk" class="module-shell">
+        <details class="collapse-card">
+          <summary id="riskSummaryHeader">
+            <div class="summary-wrap">
+              <div class="summary-top"><span class="status-dot delayed"></span><h2 class="summary-title">风险提醒区</h2><span class="expand-text">展开</span></div>
+              <div class="summary-brief">等待风险数据同步。</div>
+            </div>
+          </summary>
+          <div id="riskPanel" class="risk-panel module-body"></div>
+        </details>
+      </section>
+    </main>
+
+    <nav class="bottom-actions" aria-label="快捷操作">
+      <button type="button" data-target="sync">同步</button>
+      <button type="button" data-target="one-click">交易包</button>
+      <button type="button" data-target="lucky-zone">幸运区</button>
+      <button type="button" data-target="core-pool">核心池</button>
+      <button type="button" data-target="heatmap">热力图</button>
+      <button type="button" data-target="institution">机构</button>
+      <button type="button" data-target="fib">斐波</button>
+      <button type="button" data-target="change-log">日志</button>
+    </nav>
+
+    <span id="syncCountdown" class="sr-only"></span>
+    <span id="anchorModeState" class="sr-only"></span>
+    <span id="signalCount" class="sr-only"></span>
+    <span id="universeDate" class="sr-only"></span>
+
+    <script src="./trading_cockpit_i18n.js"></script>
+    <script src="./trading_cockpit.js"></script>
+  </body>
+</html>

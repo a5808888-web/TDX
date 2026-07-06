@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>示例股份 斐波那契回撤 &amp; 扩展交易系统</title>
+  <style>
+    body { margin: 0; background: #090d11; color: #eef4f8; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 18px; }
+    h1 { font-size: 24px; margin: 0 0 12px; color: #ffd54a; }
+    h2 { margin: 0 0 10px; font-size: 16px; color: #ffd54a; }
+    .grid { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr; gap: 10px; }
+    .panel { border: 1px solid #394653; border-radius: 6px; padding: 12px; background: #0c1116; }
+    .wide { grid-column: span 2; }
+    .full { grid-column: 1 / -1; }
+    ul { margin: 0; padding-left: 18px; line-height: 1.7; }
+    .green { color: #39e66f; }
+    .red { color: #ff5757; }
+    .cyan { color: #62d9ff; }
+    .score { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+    .score strong { color: #39e66f; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .wide { grid-column: auto; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>示例股份 斐波那契回撤 &amp; 扩展交易系统</h1>
+    <section class="panel full"><svg viewBox="0 0 1180 560" width="100%" role="img" aria-label="斐波那契回撤与扩展交易图"><rect x="170" y="423.5" width="880" height="23.3" fill="#123d2a" opacity="0.5"/><text x="180" y="445.5" fill="#39e66f" font-size="15">最佳买点波段 48.56 ~ 55.28</text><line x1="140" y1="337.8" x2="1060" y2="337.8" stroke="#ffcc4d" stroke-width="1.2" opacity="0.85"/><text x="24" y="341.8" fill="#ffcc4d" font-size="13">波段高点</text><text x="1075" y="341.8" fill="#ffcc4d" font-size="13">80.00</text><line x1="140" y1="370.5" x2="1060" y2="370.5" stroke="#39e66f" stroke-width="1.2" opacity="0.85"/><text x="24" y="374.5" fill="#39e66f" font-size="13">回撤 0.236</text><text x="1075" y="374.5" fill="#39e66f" font-size="13">70.56</text><line x1="140" y1="390.8" x2="1060" y2="390.8" stroke="#39e66f" stroke-width="1.2" opacity="0.85"/><text x="24" y="394.8" fill="#39e66f" font-size="13">回撤 0.382</text><text x="1075" y="394.8" fill="#39e66f" font-size="13">64.72</text><line x1="140" y1="407.1" x2="1060" y2="407.1" stroke="#39e66f" stroke-width="1.2" opacity="0.85"/><text x="24" y="411.1" fill="#39e66f" font-size="13">回撤 0.5</text><text x="1075" y="411.1" fill="#39e66f" font-size="13">60.00</text><line x1="140" y1="423.5" x2="1060" y2="423.5" stroke="#39e66f" stroke-width="1.2" opacity="0.85"/><text x="24" y="427.5" fill="#39e66f" font-size="13">回撤 0.618</text><text x="1075" y="427.5" fill="#39e66f" font-size="13">55.28</text><line x1="140" y1="446.8" x2="1060" y2="446.8" stroke="#20e0a0" stroke-width="1.2" opacity="0.85"/><text x="24" y="450.8" fill="#20e0a0" font-size="13">回撤 0.786</text><text x="1075" y="450.8" fill="#20e0a0" font-size="13">48.56</text><line x1="140" y1="476.5" x2="1060" y2="476.5" stroke="#ffcc4d" stroke-width="1.2" opacity="0.85"/><text x="24" y="480.5" fill="#ffcc4d" font-size="13">波段起点</text><text x="1075" y="480.5" fill="#ffcc4d" font-size="13">40.00</text><line x1="140" y1="305.1" x2="1060" y2="305.1" stroke="#ff6b55" stroke-width="1.2" opacity="0.85"/><text x="24" y="309.1" fill="#ff6b55" font-size="13">扩展 0.236</text><text x="1075" y="309.1" fill="#ff6b55" font-size="13">89.44</text><line x1="140" y1="161.5" x2="1060" y2="161.5" stroke="#ff6b55" stroke-width="1.2" opacity="0.85"/><text x="24" y="165.5" fill="#ff6b55" font-size="13">扩展 1.272</text><text x="1075" y="165.5" fill="#ff6b55" font-size="13">130.88</text><line x1="140" y1="113.5" x2="1060" y2="113.5" stroke="#ff6b55" stroke-width="1.2" opacity="0.85"/><text x="24" y="117.5" fill="#ff6b55" font-size="13">扩展 1.618</text><text x="1075" y="117.5" fill="#ff6b55" font-size="13">144.72</text><line x1="120" y1="434.9" x2="1090" y2="434.9" stroke="#62d9ff" stroke-width="2.4"/><text x="890" y="426.9" fill="#62d9ff" font-size="15">当前价格 52.00</text><circle cx="300" cy="476.5" r="6" fill="#39e66f"/><text x="315" y="481.5" fill="#eef4f8" font-size="13">起点低点 40.00</text><circle cx="820" cy="337.8" r="6" fill="#ffcc4d"/><text x="835" y="342.8" fill="#eef4f8" font-size="13">终点高点 80.00</text><line x1="300" y1="476.5" x2="820" y2="337.8" stroke="#eef4f8" stroke-width="2" opacity="0.7"/></svg></section>
+    <section class="grid">
+      <section class="panel"><h2>我的理解（核心逻辑）</h2><ul><li>波段结构：低点到高点构成完整斐波那契契约波段。</li><li>当前位置：当前处于最佳买点回撤波段。</li><li>最佳买点波段：48.56 ~ 55.28</li><li>趋势判断：多头</li></ul></section>
+      <section class="panel"><h2>两个买点的作用</h2><ul><li>买点1（回撤0.786）：48.56，深度回撤支撑。</li><li>买点2（扩展0.236）：89.44，突破后的二次入场点。</li></ul></section>
+      <section class="panel"><h2>交易策略</h2><ul><li>买点1入场：价格进入 0.786~0.618 回撤带，并出现止跌确认后分批入场。</li><li>买点2入场：有效突破扩展 0.236 并放量站稳后再入场。</li><li>仓位建议：买点1轻仓试错，买点2确认后加仓；单笔风险限制在 1%~2%。</li><li>风险等级：低</li></ul></section>
+      <section class="panel wide"><h2>关键价格区间</h2><ul><li>回撤 0.786：48.56（深度回撤支撑，买点1）</li><li>扩展 0.236：89.44（突破后的二次入场点，买点2）</li><li>回撤 0.618：55.28（黄金回撤支撑）</li><li>回撤 0.5：60.00（中轴）</li><li>回撤 0.382：64.72（阻力/支撑观察位）</li><li>波段高点：80.00（波段高点）</li><li>扩展 1.272：130.88（第一扩展目标）</li><li>扩展 1.618：144.72（第二扩展目标）</li></ul></section>
+      <section class="panel"><h2>风险控制</h2><ul><li>单笔风险控制在总资金的 1%~2%。</li><li>严格执行止损，不抗单；跌破关键支撑需减仓或离场。</li><li>分批止盈，保留趋势仓位。</li><li>突破关键位置并放量确认后再加仓。</li><li>跌破关键支撑、共振失效或风险分过高时离场。</li></ul></section>
+      <section class="panel"><h2>评分系统</h2><div class="score"><span>波段结构稳定性</span><strong>96.00</strong><span>共振强度</span><strong>82.00</strong><span>趋势强度</span><strong>72.00</strong><span>成交量配合度</span><strong>78.00</strong><span>资金流向</span><strong>75.00</strong><span>综合 FibScore</span><strong>81.85</strong></div></section>
+      <section class="panel"><h2>关键结论（总结）</h2><ul><li>操作建议：BUY</li><li>买点1有效：是</li><li>买点2可关注：否</li><li>严格等待价格、成交量与共振确认。</li></ul></section>
+      <section class="panel full"><h2>交易计划</h2><ul><li>买点1关注 48.56；只在止跌确认后执行。</li><li>买点2关注 89.44；突破并放量站稳后加仓。</li><li>买点1止损 46.56；买点2止损 78.80。</li><li>分批止盈：先看回撤中枢/波段高点，再看扩展 1.272 与 1.618。</li><li>离场条件：严格等待价格、成交量与共振确认。</li></ul></section>
+    </section>
+  </main>
+</body>
+</html>

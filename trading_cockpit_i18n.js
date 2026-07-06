@@ -1,0 +1,294 @@
+window.LocustI18n = (() => {
+  const currentLocale = "zh-CN";
+
+  const dictionaries = {
+    "zh-CN": {
+      app: {
+        title: "蝗虫计划 V5 交易驾驶舱",
+        ariaLabel: "蝗虫计划 V5 交易驾驶舱",
+      },
+      sections: {
+        marketStatus: "市场状态",
+        dataStatus: "数据状态",
+        anchorMode: "斐波那契锚点模式",
+        flowMap: "资金热力图",
+        stockUniverse: "选股池",
+        tradeSignals: "交易信号",
+        executionPanel: "执行面板",
+      },
+      sources: {
+        scaleFutu: "Scale系统 / 富途",
+      },
+      dataStatus: {
+        aShare: "A股（AKShare）",
+        global: "全球（Futu）",
+        system: "System",
+        ai: "AI策略",
+        connected: "已连接",
+        disconnected: "未连接",
+        lastSync: "最后同步",
+        status: "状态",
+        live: "LIVE",
+        stopped: "STOPPED",
+        openApiRunning: "OpenAPI运行",
+        syncActive: "3分钟同步运行中",
+        fibRunning: "Fib引擎运行中",
+        signalActive: "信号引擎运行中",
+        codexRunning: "Codex运行中",
+        deepseekReady: "DeepSeek状态",
+        nextSync: "下次同步 {seconds}s",
+      },
+      stockFields: {
+        price: "实时价格",
+        updatedAt: "更新时间",
+        source: "数据来源",
+        refresh: "是否刷新",
+        buyPoint1: "买点1",
+        buyPoint2: "买点2",
+        stopLoss: "止损",
+        takeProfit: "止盈",
+      },
+      aiAnalysis: {
+        title: "AI分析模块",
+        deepseek: "DeepSeek",
+        doubao: "豆包",
+        conclusion: "AI结论",
+        confidence: "置信度",
+      },
+      anchorMode: {
+        mode: "模式",
+        aiAuto: "AI自动",
+        manual: "手动",
+        hybrid: "混合",
+        aiAnchor: "AI锚点",
+        manualAnchor: "手动锚点",
+        activeAnchor: "当前锚点",
+        high: "最高点",
+        low: "最低点",
+        confidence: "置信度",
+        source: "来源",
+        status: "状态",
+        confirmed: "已确认",
+        weak: "观察",
+        invalidStatus: "无效",
+        sourceAI: "AI",
+        sourceManual: "手动",
+        sourceProvisional: "AI观察",
+        currentStatus: "当前状态",
+        consistency: "一致性",
+        valid: "有效结构",
+        invalid: "无效结构",
+        conflict: "锚点冲突",
+        manualRequired: "需要手动确认",
+        confirm: "确认并重算Fib",
+        placeholderHigh: "输入最高点",
+        placeholderLow: "输入最低点",
+        warningConflict: "AI锚点与手动锚点偏差超过5%，请复核结构。",
+        warningManualRequired: "AI置信度不足，必须手动输入锚点。",
+        warningValid: "结构有效，Fib已按当前锚点重算。",
+      },
+      market: {
+        locustScore: "蝗虫分",
+        riskScore: "风险分",
+        marketPhase: "市场阶段",
+        phaseStrong: "强",
+        phaseMid: "中",
+        phaseWeak: "弱",
+      },
+      strength: {
+        strong: "强",
+        mid: "中",
+        weak: "弱",
+      },
+      fibZone: {
+        buy: "🟢 买入区",
+        neutral: "🟡 中性区",
+        resistance: "🔴 压力区",
+      },
+      confluence: {
+        weak: "共振：{layers}层（弱）",
+        mid: "共振：{layers}层（中）",
+        strong: "共振：{layers}层（强）",
+        core: "共振：{layers}层（核心区）",
+      },
+      status: {
+        BUY: "买入",
+        WAIT: "观察",
+        AVOID: "回避",
+      },
+      action: {
+        BUY: "买入",
+        WAIT: "观察",
+        AVOID: "回避",
+      },
+      roles: {
+        commander: "中军",
+        trend: "趋势票",
+        laggard: "补涨票",
+        none: "暂无",
+      },
+      units: {
+        stocks: "{count}只",
+        scoreSuffix: "/100",
+      },
+      errors: {
+        missingClassification: "AI分类缺失：{names}",
+      },
+    },
+    "en-US": {
+      app: {
+        title: "Locust Plan V5 Trading Cockpit",
+        ariaLabel: "Locust Plan V5 Trading Cockpit",
+      },
+      sections: {
+        marketStatus: "Market Status",
+        dataStatus: "Data Status",
+        anchorMode: "Fibonacci Anchor Mode",
+        flowMap: "Flow Map",
+        stockUniverse: "Stock Universe",
+        tradeSignals: "Trade Signals",
+        executionPanel: "Execution Panel",
+      },
+      sources: {
+        scaleFutu: "Scale / Futu",
+      },
+      dataStatus: {
+        aShare: "A-share (AKShare)",
+        global: "Global (Futu)",
+        system: "System",
+        ai: "AI Strategy",
+        connected: "Connected",
+        disconnected: "Disconnected",
+        lastSync: "Last Sync",
+        status: "Status",
+        live: "LIVE",
+        stopped: "STOPPED",
+        openApiRunning: "OpenAPI Running",
+        syncActive: "3-minute sync active",
+        fibRunning: "Fib engine running",
+        signalActive: "Signal engine active",
+        codexRunning: "Codex running",
+        deepseekReady: "DeepSeek status",
+        nextSync: "Next sync {seconds}s",
+      },
+      stockFields: {
+        price: "Realtime Price",
+        updatedAt: "Updated At",
+        source: "Data Source",
+        refresh: "Refresh",
+        buyPoint1: "Buy Point 1",
+        buyPoint2: "Buy Point 2",
+        stopLoss: "Stop Loss",
+        takeProfit: "Take Profit",
+      },
+      aiAnalysis: {
+        title: "AI Analysis",
+        deepseek: "DeepSeek",
+        doubao: "Doubao",
+        conclusion: "AI Decision",
+        confidence: "Confidence",
+      },
+      anchorMode: {
+        mode: "Mode",
+        aiAuto: "AI Auto",
+        manual: "Manual",
+        hybrid: "Hybrid",
+        aiAnchor: "AI Anchor",
+        manualAnchor: "Manual Anchor",
+        activeAnchor: "Active Anchor",
+        high: "High",
+        low: "Low",
+        confidence: "Confidence",
+        source: "Source",
+        status: "Status",
+        confirmed: "Confirmed",
+        weak: "Watch",
+        invalidStatus: "Invalid",
+        sourceAI: "AI",
+        sourceManual: "Manual",
+        sourceProvisional: "AI Provisional",
+        currentStatus: "Current Status",
+        consistency: "Consistency",
+        valid: "Valid Structure",
+        invalid: "Invalid Structure",
+        conflict: "Anchor Conflict",
+        manualRequired: "Manual Required",
+        confirm: "Confirm and Rebuild Fib",
+        placeholderHigh: "Enter high",
+        placeholderLow: "Enter low",
+        warningConflict: "AI and manual anchors differ by more than 5%; review the structure.",
+        warningManualRequired: "AI confidence is insufficient; manual anchors are required.",
+        warningValid: "Structure is valid; Fib has been rebuilt from the active anchor.",
+      },
+      market: {
+        locustScore: "LocustScore",
+        riskScore: "RiskScore",
+        marketPhase: "Market Phase",
+        phaseStrong: "Strong",
+        phaseMid: "Medium",
+        phaseWeak: "Weak",
+      },
+      strength: {
+        strong: "Strong",
+        mid: "Medium",
+        weak: "Weak",
+      },
+      fibZone: {
+        buy: "🟢 Buy Zone",
+        neutral: "🟡 Neutral Zone",
+        resistance: "🔴 Resistance Zone",
+      },
+      confluence: {
+        weak: "Confluence: {layers} layer (weak)",
+        mid: "Confluence: {layers} layers (medium)",
+        strong: "Confluence: {layers} layers (strong)",
+        core: "Confluence: {layers} layers (core)",
+      },
+      status: {
+        BUY: "Buy",
+        WAIT: "Watch",
+        AVOID: "Avoid",
+      },
+      action: {
+        BUY: "Buy",
+        WAIT: "Wait",
+        AVOID: "Avoid",
+      },
+      roles: {
+        commander: "Core",
+        trend: "Trend",
+        laggard: "Catch-up",
+        none: "None",
+      },
+      units: {
+        stocks: "{count} stocks",
+        scoreSuffix: "/100",
+      },
+      errors: {
+        missingClassification: "AI classification missing: {names}",
+      },
+    },
+  };
+
+  function get_i18n(locale = currentLocale) {
+    return dictionaries[locale] || dictionaries[currentLocale];
+  }
+
+  const UI_TEXT = get_i18n("zh-CN");
+
+  function translate(path, values = {}) {
+    const dictionary = UI_TEXT;
+    const template = path.split(".").reduce((node, key) => node?.[key], dictionary);
+    if (typeof template !== "string") {
+      return path;
+    }
+    return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ""));
+  }
+
+  return {
+    locale: currentLocale,
+    UI_TEXT,
+    get_i18n,
+    t: translate,
+  };
+})();
