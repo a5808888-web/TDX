@@ -85,11 +85,12 @@ Write-Step "执行健康检查"
 & $VenvPython health_check.py --skip-llm --skip-futu --skip-a-stock
 
 Write-Step "启动本地驾驶舱服务"
-$backendHost = if ($env:LOCUST_BACKEND_HOST) { $env:LOCUST_BACKEND_HOST } else { "127.0.0.1" }
+$backendHost = if ($env:LOCUST_BACKEND_HOST) { $env:LOCUST_BACKEND_HOST } else { "0.0.0.0" }
 $backendPort = if ($env:LOCUST_BACKEND_PORT) { $env:LOCUST_BACKEND_PORT } else { "8000" }
 $publicHost = if ($env:LOCUST_PUBLIC_HOST) { $env:LOCUST_PUBLIC_HOST } else { "127.0.0.1" }
 if ($publicHost -eq "0.0.0.0" -or $publicHost -eq "::") { $publicHost = "127.0.0.1" }
 $env:LOCUST_BACKEND_URL = "http://${publicHost}:${backendPort}/trading_cockpit.html"
+$env:LOCUST_BACKEND_HOST = $backendHost
 $backend = Start-Process -FilePath $VenvPython -ArgumentList "app.py" -WorkingDirectory $Root -WindowStyle Hidden -PassThru
 Start-Sleep -Seconds 2
 

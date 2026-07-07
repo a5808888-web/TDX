@@ -87,6 +87,7 @@ step "执行健康检查"
 
 step "启动本地驾驶舱服务"
 BACKEND_PORT="${LOCUST_BACKEND_PORT:-8000}"
+export LOCUST_BACKEND_HOST="${LOCUST_BACKEND_HOST:-0.0.0.0}"
 PUBLIC_HOST="${LOCUST_PUBLIC_HOST:-127.0.0.1}"
 if [ "$PUBLIC_HOST" = "0.0.0.0" ] || [ "$PUBLIC_HOST" = "::" ]; then
   PUBLIC_HOST="127.0.0.1"
