@@ -14,6 +14,16 @@ const REQUIRED_I18N_KEYS = [
   "aiAnalysis.deepseek",
 ];
 
+const ACCOUNT_HOLDINGS = [
+  {
+    name: "拓普集团",
+    symbol: "601689.SH",
+    quantity: null,
+    cost: null,
+    status: "已在仓",
+  },
+];
+
 let lastSyncAt = null;
 let marketDataBySymbol = new Map();
 let currentSignals = [];
@@ -3716,11 +3726,27 @@ function renderAIAnalysisPanel(signals, syncTime, marketState = currentMarketSta
   `).join("");
 }
 
-function renderAccountPanel(signals, market, syncTime, marketState = currentMarketState) {
+function renderAccountPanel(signals, market, syncTime, marketState = currentMarketState, universe = []) {
+  const holdings = ACCOUNT_HOLDINGS.map((holding) => {
+    const stockItem = findUniverseStock(universe, holding.symbol);
+    return {
+      ...holding,
+      stockItem,
+      price: stockItem?.price?.value ?? null,
+      signal: stockItem?.signal || "WAIT",
+      riskScore: stockItem?.riskScore ?? null,
+      sector: stockItem?.sector || "未匹配板块",
+    };
+  });
+  const holdingSummary = holdings.length > 0
+    ? holdings.map((holding) => `${holding.name} ${holding.symbol}`).join(" / ")
+    : "无";
+  const sellableCount = holdings.length;
+  const blockedCount = holdings.filter((holding) => holding.signal === "AVOID").length;
   renderSummaryHeader("accountSummaryHeader", {
     title: "账户执行区",
     dotClass: marketStateDot(marketState.state),
-    brief: `当前无持仓，可等待买点；${marketState.label}`,
+    brief: `当前持仓：${holdingSummary}；${marketState.label}`,
     source: "账户 / 实时行情",
     updatedAt: marketState.referenceTime,
     status: marketStateStatusText(marketState),
@@ -3728,17 +3754,28 @@ function renderAccountPanel(signals, market, syncTime, marketState = currentMark
   document.getElementById("accountPanel").innerHTML = `
     <article class="account-card">
       <div class="card-lines">
-        ${lineItem("当前持仓", "无")}
-        ${lineItem("可用现金", "等待买点")}
-        ${lineItem("今日可卖", "0只")}
-        ${lineItem("今日不可卖", "0只")}
+        ${lineItem("当前持仓", holdingSummary)}
+        ${lineItem("持仓数量", holdings.map((holding) => `${holding.name}：${holding.quantity ?? "待补充"}`).join(" / "))}
+        ${lineItem("持仓成本", holdings.map((holding) => `${holding.name}：${holding.cost ?? "待补充"}`).join(" / "))}
+        ${lineItem("实时价格", holdings.map((holding) => `${holding.name}：${formatPriceValue(holding.price)}`).join(" / "))}
+        ${lineItem("所属板块", holdings.map((holding) => `${holding.name}：${holding.sector}`).join(" / "))}
+        ${lineItem("今日可卖", `${sellableCount}只`)}
+        ${lineItem("风险观察", blockedCount > 0 ? `${blockedCount}只需减仓观察` : "持仓风险可控")}
         ${lineItem("当前动作", UI_SIGNAL[market.action])}
         ${lineItem("风险提示", market.riskScore >= 60 ? "控制仓位" : "风险可控")}
       </div>
-      <div class="source-line">${displayUiText(`当前无持仓，可等待买点｜数据源：账户 / AKShare / 富途 API｜更新时间：${formatDateTime(marketState.referenceTime)}｜状态：${marketState.label}｜${marketState.note}`)}</div>
+      <div class="source-line">${displayUiText(`当前持仓：${holdingSummary}｜数据源：账户 / AKShare / 富途 API｜更新时间：${formatDateTime(marketState.referenceTime)}｜状态：${marketState.label}｜${marketState.note}`)}</div>
       <button class="account-button" type="button" data-target="top-picks">查看候选股票</button>
     </article>
   `;
+}
+
+function findUniverseStock(universe, symbol) {
+  for (const sectorItem of universe) {
+    const found = sectorItem.pool.find((item) => item.symbol === symbol);
+    if (found) return found;
+  }
+  return null;
 }
 
 function renderRiskPanel(signals, market, globalHeatmap, syncTime, marketState = currentMarketState) {
@@ -4028,7 +4065,7 @@ async function performSync() {
     renderTopPicks(topSignals, syncTime, marketState);
     renderFibonacciPanel(topSignals, syncTime, marketState);
     renderAIAnalysisPanel(topSignals, syncTime, marketState);
-    renderAccountPanel(topSignals, market, syncTime, marketState);
+    renderAccountPanel(topSignals, market, syncTime, marketState, universe);
     renderDynamicChangeLog(changeLog, dynamicSnapshot, marketState);
     renderRiskPanel(topSignals, market, globalHeatmap, syncTime, marketState);
     renderCountdown();
