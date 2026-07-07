@@ -1,7 +1,7 @@
 import sys
 import types
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from locust_global_market_system import DataSource, MarketType
 from market_data_connectors import (
@@ -43,6 +43,48 @@ class MarketDataConnectorsTest(unittest.TestCase):
 
         self.assertEqual(snapshots["300750.SZ"].price, 150.25)
         self.assertIn("000003.SZ", errors)
+
+    def test_akshare_connector_retries_sina_spot_fetch(self):
+        fake_module = types.SimpleNamespace()
+        calls = {"count": 0}
+
+        def stock_zh_a_spot():
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise RuntimeError("temporary decode error")
+            return [{"代码": "sh601689", "最新价": "61.85", "成交量": "26757696"}]
+
+        fake_module.stock_zh_a_spot = stock_zh_a_spot
+        fake_module.stock_zh_a_spot_em = Mock(side_effect=RuntimeError("eastmoney unavailable"))
+
+        with patch.dict(sys.modules, {"akshare": fake_module}), patch("market_data_connectors.time.sleep"):
+            snapshot = AKShareMarketConnector().fetch_snapshot(
+                AShareQuery(symbol="601689.SH", set_code=0, trend=50.0, volatility=30.0)
+            )
+
+        self.assertEqual(snapshot.price, 61.85)
+        self.assertEqual(calls["count"], 2)
+
+    def test_akshare_connector_falls_back_to_single_symbol_sina_quote(self):
+        fake_module = types.SimpleNamespace(
+            stock_zh_a_spot=Mock(side_effect=RuntimeError("full market unavailable")),
+            stock_zh_a_spot_em=Mock(side_effect=RuntimeError("eastmoney unavailable")),
+        )
+
+        with (
+            patch.dict(sys.modules, {"akshare": fake_module}),
+            patch("market_data_connectors.time.sleep"),
+            patch(
+                "market_data_connectors._fetch_sina_quote_payload",
+                return_value=[{"代码": "sh601689", "最新价": "61.85", "成交量": "26757696"}],
+            ),
+        ):
+            snapshot = AKShareMarketConnector().fetch_snapshot(
+                AShareQuery(symbol="601689.SH", set_code=0, trend=50.0, volatility=30.0)
+            )
+
+        self.assertEqual(snapshot.price, 61.85)
+        self.assertEqual(snapshot.volume, 26757696.0)
 
     def test_akshare_strategy_snapshot_adds_eastmoney_fund_flow_score(self):
         def spot_fetcher():

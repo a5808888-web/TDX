@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+import urllib.request
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -36,17 +38,26 @@ class AKShareMarketConnector:
         self.eastmoney_connector = eastmoney_connector or EastmoneyFlowConnector()
 
     def fetch_snapshot(self, query: AShareQuery) -> MarketSnapshot:
-        payload = self._fetch_spot_payload()
+        try:
+            payload = self._fetch_spot_payload()
+        except ConnectorError:
+            payload = _fetch_sina_quote_payload((query.symbol,))
         return self._snapshot_from_payload(payload, query)
 
     def fetch_snapshots(self, queries: tuple[AShareQuery, ...]) -> tuple[MarketSnapshot, ...]:
-        payload = self._fetch_spot_payload()
+        try:
+            payload = self._fetch_spot_payload()
+        except ConnectorError:
+            payload = _fetch_sina_quote_payload(tuple(query.symbol for query in queries))
         return tuple(self._snapshot_from_payload(payload, query) for query in queries)
 
     def fetch_snapshot_map(
         self, queries: tuple[AShareQuery, ...]
     ) -> tuple[dict[str, MarketSnapshot], dict[str, str]]:
-        payload = self._fetch_spot_payload()
+        try:
+            payload = self._fetch_spot_payload()
+        except ConnectorError:
+            payload = _fetch_sina_quote_payload(tuple(query.symbol for query in queries))
         snapshots: dict[str, MarketSnapshot] = {}
         errors: dict[str, str] = {}
         for query in queries:
@@ -96,13 +107,23 @@ class AKShareMarketConnector:
             import akshare as ak
         except Exception as exc:
             raise ConnectorError("akshare 未安装或不可导入。") from exc
-        try:
-            return ak.stock_zh_a_spot()
-        except Exception as sina_exc:
+
+        sina_errors: list[str] = []
+        for _ in range(3):
             try:
-                return ak.stock_zh_a_spot_em()
-            except Exception as em_exc:
-                raise ConnectorError(f"AKShare A股实时行情调用失败：{sina_exc}; 东方财富备用接口失败：{em_exc}") from em_exc
+                return ak.stock_zh_a_spot()
+            except Exception as exc:
+                sina_errors.append(str(exc))
+                time.sleep(1)
+
+        try:
+            return ak.stock_zh_a_spot_em()
+        except Exception as em_exc:
+            raise ConnectorError(
+                "AKShare A股实时行情调用失败："
+                + " | ".join(sina_errors)
+                + f"; 东方财富备用接口失败：{em_exc}"
+            ) from em_exc
 
 
 class EastmoneyFlowConnector:
@@ -249,3 +270,56 @@ def _normalize_a_share_code(symbol: str) -> str:
 
 def _eastmoney_market(symbol: str) -> str:
     return "sh" if symbol.endswith(".SH") or symbol.startswith("6") else "sz"
+
+
+def _fetch_sina_quote_payload(symbols: tuple[str, ...]) -> list[dict[str, Any]]:
+    if not symbols:
+        return []
+    sina_symbols = ",".join(_sina_symbol(symbol) for symbol in symbols)
+    url = f"https://hq.sinajs.cn/list={sina_symbols}"
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://finance.sina.com.cn/",
+        },
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            text = response.read().decode("gbk", errors="ignore")
+    except Exception as exc:
+        raise ConnectorError("Sina A股逐只行情兜底接口调用失败。") from exc
+
+    rows: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        if '="' not in line:
+            continue
+        left, payload = line.split('="', 1)
+        symbol = left.rsplit("_", 1)[-1]
+        fields = payload.rstrip('";').split(",")
+        if len(fields) < 10 or not fields[0]:
+            continue
+        rows.append(
+            {
+                "代码": symbol,
+                "名称": fields[0],
+                "最新价": fields[3],
+                "成交量": fields[8],
+                "成交额": fields[9],
+                "时间戳": fields[31] if len(fields) > 31 else "",
+            }
+        )
+    if not rows:
+        raise ConnectorError("Sina A股逐只行情未返回可用数据。")
+    return rows
+
+
+def _sina_symbol(symbol: str) -> str:
+    code = _normalize_a_share_code(symbol)
+    upper = symbol.upper()
+    if upper.endswith(".SH") or code.startswith("6"):
+        return f"sh{code}"
+    if upper.endswith(".BJ") or code.startswith(("8", "9")):
+        return f"bj{code}"
+    return f"sz{code}"

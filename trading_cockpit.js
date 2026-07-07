@@ -42,6 +42,7 @@ let currentHeatmapDrillTree = null;
 let currentHeatmapConclusion = null;
 let currentOneClickPackage = null;
 let currentLuckyZoneSystem = null;
+let currentUniverse = [];
 let previousDynamicSnapshot = null;
 let currentChangeLog = [];
 let syncRunId = 0;
@@ -3572,9 +3573,24 @@ function renderStockCard(signal) {
   `;
 }
 
+function buildFibonacciSignals(signals, universe = []) {
+  const bySymbol = new Map();
+  ACCOUNT_HOLDINGS.forEach((holding) => {
+    const stockItem = findUniverseStock(universe, holding.symbol);
+    if (stockItem) bySymbol.set(stockItem.symbol, stockItem);
+  });
+  signals.forEach((signal) => {
+    if (!bySymbol.has(signal.symbol)) bySymbol.set(signal.symbol, signal);
+  });
+  return Array.from(bySymbol.values());
+}
+
 function renderAnchorModePanel(signals, syncTime, marketState = currentMarketState) {
   if (!signals.length) return;
-  if (!selectedAnchorStockName || !signals.some((signal) => signal.name === selectedAnchorStockName)) selectedAnchorStockName = signals[0].name;
+  if (!selectedAnchorStockName || !signals.some((signal) => signal.name === selectedAnchorStockName)) {
+    const holdingSignal = signals.find((signal) => ACCOUNT_HOLDINGS.some((holding) => holding.symbol === signal.symbol));
+    selectedAnchorStockName = (holdingSignal || signals[0]).name;
+  }
   const signal = signals.find((item) => item.name === selectedAnchorStockName) || signals[0];
   const state = signal.anchorState;
   document.getElementById("anchorModeState").textContent = anchorStateText(state.consistency.flag);
@@ -3597,7 +3613,7 @@ function renderAnchorModePanel(signals, syncTime, marketState = currentMarketSta
       <div class="anchor-form">
         <label class="anchor-field">股票
           <select id="anchorStockSelect" class="anchor-input">
-            ${signals.map((item) => `<option value="${item.name}" ${item.name === signal.name ? "selected" : ""}>${item.name}</option>`).join("")}
+            ${signals.map((item) => `<option value="${item.name}" ${item.name === signal.name ? "selected" : ""}>${item.name} ${item.symbol}</option>`).join("")}
           </select>
         </label>
         <label class="anchor-field">模式
@@ -3620,17 +3636,18 @@ function renderAnchorModePanel(signals, syncTime, marketState = currentMarketSta
   bindAnchorControls();
 }
 
-function renderFibonacciPanel(signals, syncTime, marketState = currentMarketState) {
+function renderFibonacciPanel(signals, syncTime, marketState = currentMarketState, universe = currentUniverse) {
+  const fibSignals = buildFibonacciSignals(signals, universe);
   renderSummaryHeader("fibSummaryHeader", {
     title: "斐波那契分析",
     dotClass: marketStateDot(marketState.state),
-    brief: `默认只显示概率区间和买点；${marketState.allowFibCalculation ? "允许复盘计算" : "暂停计算"}；${marketState.label}`,
+    brief: `持仓优先显示斐波区间和买点；${marketState.allowFibCalculation ? "允许复盘计算" : "暂停计算"}；${marketState.label}`,
     source: "AKShare / 富途接口 / 本地斐波引擎",
     updatedAt: marketState.referenceTime,
     status: marketStateStatusText(marketState),
   });
-  renderAnchorModePanel(signals, syncTime, marketState);
-  document.getElementById("fibonacciPanel").innerHTML = signals.map(renderFibCard).join("");
+  renderAnchorModePanel(fibSignals, syncTime, marketState);
+  document.getElementById("fibonacciPanel").innerHTML = fibSignals.map(renderFibCard).join("");
 }
 
 function renderFibCard(signal) {
@@ -3976,7 +3993,7 @@ function anchorDot(flag) {
 function bindAnchorControls() {
   document.getElementById("anchorStockSelect")?.addEventListener("change", (event) => {
     selectedAnchorStockName = event.target.value;
-    renderFibonacciPanel(currentSignals, lastSyncAt);
+    renderFibonacciPanel(currentSignals, lastSyncAt, currentMarketState, currentUniverse);
   });
   document.getElementById("anchorModeSelect")?.addEventListener("change", (event) => {
     anchorMode = event.target.value;
@@ -4048,6 +4065,7 @@ async function performSync() {
     previousDynamicSnapshot = dynamicSnapshot;
     lastSyncAt = syncTime;
     currentSignals = topSignals;
+    currentUniverse = universe;
     currentLuckyZoneSystem = luckyZone;
     currentOneClickPackage = executionPackage;
     const market = buildMarket(universe, globalHeatmap);
@@ -4063,7 +4081,7 @@ async function performSync() {
     renderInstitutionalFlowPanel(institutionalFlow, syncTime, marketState);
     renderStockUniverse(universe, syncTime, marketState);
     renderTopPicks(topSignals, syncTime, marketState);
-    renderFibonacciPanel(topSignals, syncTime, marketState);
+    renderFibonacciPanel(topSignals, syncTime, marketState, universe);
     renderAIAnalysisPanel(topSignals, syncTime, marketState);
     renderAccountPanel(topSignals, market, syncTime, marketState, universe);
     renderDynamicChangeLog(changeLog, dynamicSnapshot, marketState);
