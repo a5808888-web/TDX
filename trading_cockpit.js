@@ -22,6 +22,13 @@ const ACCOUNT_HOLDINGS = [
     cost: null,
     status: "已在仓",
   },
+  {
+    name: "浪潮信息",
+    symbol: "000977.SZ",
+    quantity: null,
+    cost: null,
+    status: "已在仓",
+  },
 ];
 
 let lastSyncAt = null;

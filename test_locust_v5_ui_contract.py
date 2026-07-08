@@ -163,6 +163,7 @@ class LocustV5UIContractTest(unittest.TestCase):
         self.assertIn("ACCOUNT_HOLDINGS", js)
         self.assertIn("buildFibonacciSignals", js)
         self.assertIn("601689.SH", js)
+        self.assertIn("000977.SZ", js)
         self.assertIn("buildMultiTimeframeFibView", js)
         self.assertIn("renderMultiTimeframeFibSummary", js)
         self.assertIn("Multi-Timeframe Fibonacci Intelligence System", js)
