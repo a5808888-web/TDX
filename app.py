@@ -436,6 +436,17 @@ def _fibonacci_master_api_output(query: dict[str, list[str]]) -> dict[str, objec
                         data_source=str(price_payload.get("source") or "AKShare"),
                         updated_at=str(price_payload.get("timestamp") or _format_api_time(datetime.now(timezone.utc))),
                         history=history,
+                        sector=_sector_for_symbol(symbol),
+                        stock_identity=_stock_identity_for_symbol(symbol),
+                        is_holding=symbol in ACCOUNT_HOLDING_NAMES,
+                        holding_cost=None,
+                        holding_quantity=None,
+                        t1_locked=False,
+                        is_core_or_lucky=_is_core_or_lucky_symbol(symbol),
+                        is_trade_pool=True,
+                        data_status=_fib_data_status(price_payload),
+                        day_high=history[-1].high if history else None,
+                        sector_heat=_sector_heat_for_symbol(symbol),
                     ),
                     ai_layer=ai_layer,
                 )
@@ -469,6 +480,45 @@ def _locked_price_for_symbol(symbol: str, items: object) -> dict[str, object]:
 
 def _stock_name_for_symbol(symbol: str) -> str:
     return ACCOUNT_HOLDING_NAMES.get(symbol, symbol)
+
+
+def _sector_for_symbol(symbol: str) -> str:
+    if symbol == "601689.SH":
+        return "人形机器人 / 具身智能"
+    if symbol == "000977.SZ":
+        return "AI服务器 / 算力 / AI硬件"
+    return "A股交易池"
+
+
+def _stock_identity_for_symbol(symbol: str) -> str:
+    if symbol == "601689.SH":
+        return "核心股/趋势"
+    if symbol == "000977.SZ":
+        return "交易池/趋势"
+    return "交易池"
+
+
+def _is_core_or_lucky_symbol(symbol: str) -> bool:
+    return symbol in {"601689.SH"}
+
+
+def _sector_heat_for_symbol(symbol: str) -> float | None:
+    if symbol == "601689.SH":
+        return 82.0
+    if symbol == "000977.SZ":
+        return 86.0
+    return None
+
+
+def _fib_data_status(price_payload: dict[str, object]) -> str:
+    status = str(price_payload.get("STATUS") or "").upper()
+    if status == "LIVE":
+        return "实时"
+    if status == "FROZEN":
+        return "收盘冻结"
+    if status == "DATA ERROR":
+        return "数据失效"
+    return "静态历史"
 
 
 def _sample_realtime_stocks():
