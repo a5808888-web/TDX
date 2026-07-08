@@ -50,6 +50,7 @@ let currentHeatmapConclusion = null;
 let currentOneClickPackage = null;
 let currentLuckyZoneSystem = null;
 let currentUniverse = [];
+let currentFibonacciMaster = { status: "idle", analyses: [], errors: {} };
 let previousDynamicSnapshot = null;
 let currentChangeLog = [];
 let syncRunId = 0;
@@ -3592,6 +3593,38 @@ function buildFibonacciSignals(signals, universe = []) {
   return Array.from(bySymbol.values());
 }
 
+function fibonacciMasterSymbols() {
+  return ACCOUNT_HOLDINGS.map((holding) => holding.symbol).filter(Boolean).join(",");
+}
+
+async function fetchFibonacciMaster() {
+  const symbols = fibonacciMasterSymbols();
+  if (!symbols) return { status: "empty", analyses: [], errors: {} };
+  const response = await fetch(`/api/fibonacci-master?symbols=${encodeURIComponent(symbols)}`, { cache: "no-store" });
+  if (!response.ok) throw new Error(`Fibonacci Master HTTP ${response.status}`);
+  return response.json();
+}
+
+function refreshFibonacciMaster(signals, syncTime, marketState = currentMarketState, universe = currentUniverse) {
+  currentFibonacciMaster = { status: "loading", analyses: currentFibonacciMaster.analyses || [], errors: {} };
+  renderFibonacciPanel(signals, syncTime, marketState, universe);
+  fetchFibonacciMaster()
+    .then((payload) => {
+      currentFibonacciMaster = { status: "ready", analyses: payload.analyses || [], errors: payload.errors || {}, generatedAt: payload.generated_at };
+      renderFibonacciPanel(signals, syncTime, marketState, universe);
+      pushLog("Fibonacci Master", "持仓股", "SYNC", "AI_REVIEW", "斐波那契全工具、历史胜率、共振区、DeepSeek、豆包完成一次刷新");
+    })
+    .catch((error) => {
+      currentFibonacciMaster = { status: "error", analyses: [], errors: { fibonacci_master: String(error.message || error) } };
+      renderFibonacciPanel(signals, syncTime, marketState, universe);
+      pushLog("Fibonacci Master", "持仓股", "SYNC", "ERROR", "Fibonacci Master刷新失败，保持观察，不输出可买结论");
+    });
+}
+
+function findFibonacciMasterAnalysis(symbol) {
+  return (currentFibonacciMaster.analyses || []).find((item) => item.symbol === symbol);
+}
+
 function renderAnchorModePanel(signals, syncTime, marketState = currentMarketState) {
   if (!signals.length) return;
   if (!selectedAnchorStockName || !signals.some((signal) => signal.name === selectedAnchorStockName)) {
@@ -3660,6 +3693,7 @@ function renderFibonacciPanel(signals, syncTime, marketState = currentMarketStat
 function renderFibCard(signal) {
   const fib = signal.anchorState.fib;
   const multi = signal.multiTimeframeFib;
+  const master = findFibonacciMasterAnalysis(signal.symbol);
   return `
     <article class="fib-card">
       <div class="card-head"><span class="status-dot ${signal.tradeable ? "buy" : "watch"}"></span><div class="card-title">${signal.name}</div><div class="card-action">${signal.tradeable ? "可交易" : "等待"}</div></div>
@@ -3683,11 +3717,134 @@ function renderFibCard(signal) {
           </div>
           ${fib ? `<div class="card-lines">${renderFibLevels("回撤斐波", fib.retracements, ["0.236", "0.382", "0.5", "0.618", "0.786"])}${renderFibLevels("扩展斐波", fib.extensions, ["1.272", "1.618"])}</div>` : ""}
           ${renderMultiTimeframeFibSummary(multi)}
+          ${renderFibonacciMasterAnalysis(master, signal)}
           <div class="source-line">${displayUiText(`数据源：${signal.price.source}｜更新时间：${formatDateTime(signal.price.timestamp)}｜状态：${currentMarketState.label}｜${currentMarketState.note}`)}</div>
         </div>
       </details>
     </article>
   `;
+}
+
+function renderFibonacciMasterAnalysis(master, signal) {
+  if (currentFibonacciMaster.status === "loading" && !master) {
+    return `<section class="fib-master-card"><div class="card-title">Fibonacci Master System</div><div class="summary-brief">正在重新执行全工具斐波那契、历史胜率、共振区、DeepSeek与豆包复核。</div></section>`;
+  }
+  if (!master) {
+    const error = currentFibonacciMaster.errors?.[signal.symbol] || currentFibonacciMaster.errors?.fibonacci_master || "等待下一次同步生成";
+    return `<section class="fib-master-card"><div class="card-title">Fibonacci Master System</div><div class="anchor-warning">未生成最终结论：${escapeHtml(error)}</div></section>`;
+  }
+  const buy1 = master.buy_point1 || {};
+  const buy2 = master.buy_point2 || {};
+  const stop = master.stop_loss || {};
+  const take = master.take_profit || {};
+  const zone = master.best_buy_zone || {};
+  return `
+    <section class="fib-master-card">
+      <div class="card-head"><span class="status-dot ${master.final_action === "可买" ? "buy" : master.final_action === "回避" ? "avoid" : "watch"}"></span><div class="card-title">Fibonacci Master System</div><div class="card-action">${master.final_action || "观察"}</div></div>
+      ${renderFibonacciKline(master)}
+      <div class="card-lines">
+        ${lineItem("股票名称", `${master.stock_name} ${master.symbol}`)}
+        ${lineItem("当前价格", formatPriceValue(master.current_price))}
+        ${lineItem("数据来源", master.data_source)}
+        ${lineItem("更新时间", master.updated_at)}
+        ${lineItem("主波段低点", master.primary_anchor?.anchor_low)}
+        ${lineItem("主波段高点", master.primary_anchor?.anchor_high)}
+        ${lineItem("区间差值", master.primary_anchor?.range)}
+        ${lineItem("使用工具", (master.selected_tools || []).join(" / "))}
+        ${lineItem("买点1", `${formatPriceValue(buy1.price)} | ${buy1.source || "retracement 0.786"} | 胜率 ${buy1.historical_success_rate ?? "--"}% | 样本 ${buy1.sample_count ?? "--"} | 失败 ${buy1.failure_count ?? "--"}`)}
+        ${lineItem("买点2", `${formatPriceValue(buy2.price)} | ${buy2.source || "upward 0.236"} | 胜率 ${buy2.historical_success_rate ?? "--"}% | 样本 ${buy2.sample_count ?? "--"} | 失败 ${buy2.failure_count ?? "--"}`)}
+        ${lineItem("最佳买入波段", `${formatPriceValue(zone.price_range?.[0])} - ${formatPriceValue(zone.price_range?.[1])} | ${zone.confluence_strength || "--"} | 综合胜率 ${zone.combined_success_rate ?? "--"}%`)}
+        ${lineItem("止损", `${formatPriceValue(stop.price)} | ${stop.source || "--"}`)}
+        ${lineItem("止盈1", `${formatPriceValue(take.target1?.price)} | ${take.target1?.source || "--"}`)}
+        ${lineItem("止盈2", `${formatPriceValue(take.target2?.price)} | ${take.target2?.source || "--"}`)}
+        ${lineItem("止盈3", `${formatPriceValue(take.target3?.price)} | ${take.target3?.source || "--"}`)}
+        ${lineItem("DeepSeek结论", master.deepseek_review?.deepseek_decision || "等待")}
+        ${lineItem("豆包结论", master.doubao_review?.doubao_decision || "等待")}
+        ${lineItem("AI融合结论", `${master.ai_fusion?.fusion_score ?? "--"} | ${master.ai_fusion?.reason || master.reason || "--"}`)}
+        ${lineItem("最终动作", master.final_action || "观察")}
+        ${lineItem("原因", master.reason || "--")}
+      </div>
+      ${renderFibonacciMasterTables(master)}
+    </section>
+  `;
+}
+
+function renderFibonacciKline(master) {
+  const bars = master.chart_bars || [];
+  if (!bars.length) return "";
+  const width = 320;
+  const height = 150;
+  const prices = bars.flatMap((bar) => [bar.high, bar.low]).filter((value) => Number.isFinite(value));
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const scaleY = (price) => height - 12 - ((price - minPrice) / Math.max(0.001, maxPrice - minPrice)) * (height - 24);
+  const step = width / bars.length;
+  const candles = bars.map((bar, index) => {
+    const x = index * step + step / 2;
+    const openY = scaleY(bar.open);
+    const closeY = scaleY(bar.close);
+    const highY = scaleY(bar.high);
+    const lowY = scaleY(bar.low);
+    const up = bar.close >= bar.open;
+    const bodyY = Math.min(openY, closeY);
+    const bodyH = Math.max(2, Math.abs(closeY - openY));
+    return `<line x1="${x.toFixed(1)}" y1="${highY.toFixed(1)}" x2="${x.toFixed(1)}" y2="${lowY.toFixed(1)}" class="kline-wick ${up ? "up" : "down"}"></line><rect x="${(x - Math.max(1.5, step * 0.28)).toFixed(1)}" y="${bodyY.toFixed(1)}" width="${Math.max(3, step * 0.56).toFixed(1)}" height="${bodyH.toFixed(1)}" class="kline-body ${up ? "up" : "down"}"></rect>`;
+  }).join("");
+  const currentY = scaleY(master.current_price);
+  const anchorHighY = scaleY(master.primary_anchor?.anchor_high || maxPrice);
+  const anchorLowY = scaleY(master.primary_anchor?.anchor_low || minPrice);
+  return `
+    <div class="fib-master-chart" aria-label="K线图">
+      <svg viewBox="0 0 ${width} ${height}" role="img">
+        ${candles}
+        <line x1="0" y1="${currentY.toFixed(1)}" x2="${width}" y2="${currentY.toFixed(1)}" class="fib-current-line"></line>
+        <line x1="0" y1="${anchorHighY.toFixed(1)}" x2="${width}" y2="${anchorHighY.toFixed(1)}" class="fib-anchor-high"></line>
+        <line x1="0" y1="${anchorLowY.toFixed(1)}" x2="${width}" y2="${anchorLowY.toFixed(1)}" class="fib-anchor-low"></line>
+      </svg>
+      <div class="source-line">K线图：真实历史K线 | 高低点、当前价、主波段锚点已标记</div>
+    </div>
+  `;
+}
+
+function renderFibonacciMasterTables(master) {
+  const waves = (master.multi_wave_table || []).slice(0, 7);
+  const winRates = (master.win_rate_table || []).slice(0, 12);
+  const zones = (master.confluence_zones || []).slice(0, 6);
+  return `
+    <details class="detail-card">
+      <summary>多波段 / 胜率 / 共振 / 双AI详情</summary>
+      <div class="detail-body">
+        ${renderCompactTable("多波段表", ["波段", "低点", "高点", "0.618", "0.786", "扩展1.618", "胜率", "纳入"], waves.map((item) => [item.wave_name, item.anchor_low, item.anchor_high, item.retracement_0_618, item.retracement_0_786, item.extension_1_618, `${item.historical_success_rate}%`, item.included_in_final ? "是" : "否"]))}
+        ${renderCompactTable("胜率表", ["工具", "波段", "系数", "价格", "触达", "成功", "失败", "胜率", "样本"], winRates.map((item) => [item.tool_name, item.wave_name, item.ratio, item.price, item.historical_touch_count, item.success_count, item.failure_count, `${item.success_rate}%`, item.confidence_by_sample]))}
+        ${renderCompactTable("共振区表", ["价格区间", "波段", "工具", "触达", "成功", "失败", "胜率", "强度"], zones.map((item) => [`${formatPriceValue(item.price_range?.[0])}-${formatPriceValue(item.price_range?.[1])}`, item.participating_wave_count, item.participating_tool_count, item.historical_touch_count, item.historical_success_count, item.historical_failure_count, `${item.combined_success_rate}%`, item.confluence_strength]))}
+        <div class="card-lines">
+          ${lineItem("DeepSeek结构", master.deepseek_review?.deepseek_structure_view || "--")}
+          ${lineItem("DeepSeek锚点", master.deepseek_review?.deepseek_anchor_view || "--")}
+          ${lineItem("DeepSeek风险", master.deepseek_review?.deepseek_risk_view || "--")}
+          ${lineItem("豆包新闻", master.doubao_review?.doubao_news_view || "--")}
+          ${lineItem("豆包情绪", master.doubao_review?.doubao_sentiment_view || "--")}
+          ${lineItem("豆包板块", master.doubao_review?.doubao_sector_view || "--")}
+        </div>
+      </div>
+    </details>
+  `;
+}
+
+function renderCompactTable(title, headers, rows) {
+  if (!rows.length) return `<div class="card-title">${title}</div><div class="summary-brief">暂无数据</div>`;
+  return `
+    <div class="card-title">${title}</div>
+    <div class="fib-master-table">
+      <table>
+        <thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead>
+        <tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell ?? "--"}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
 }
 
 function renderMultiTimeframeFibSummary(multi) {
@@ -4089,6 +4246,7 @@ async function performSync() {
     renderStockUniverse(universe, syncTime, marketState);
     renderTopPicks(topSignals, syncTime, marketState);
     renderFibonacciPanel(topSignals, syncTime, marketState, universe);
+    refreshFibonacciMaster(topSignals, syncTime, marketState, universe);
     renderAIAnalysisPanel(topSignals, syncTime, marketState);
     renderAccountPanel(topSignals, market, syncTime, marketState, universe);
     renderDynamicChangeLog(changeLog, dynamicSnapshot, marketState);
