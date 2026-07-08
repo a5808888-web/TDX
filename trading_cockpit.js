@@ -3612,17 +3612,32 @@ function refreshFibonacciMaster(signals, syncTime, marketState = currentMarketSt
     .then((payload) => {
       currentFibonacciMaster = { status: "ready", analyses: payload.analyses || [], errors: payload.errors || {}, generatedAt: payload.generated_at };
       renderFibonacciPanel(signals, syncTime, marketState, universe);
-      pushLog("Fibonacci Master", "持仓股", "SYNC", "AI_REVIEW", "斐波那契全工具、历史胜率、共振区、DeepSeek、豆包完成一次刷新");
+      appendRuntimeChangeLog("Fibonacci Master", "持仓股", "SYNC", "AI_REVIEW", "斐波那契全工具、历史胜率、共振区、DeepSeek、豆包完成一次刷新");
     })
     .catch((error) => {
       currentFibonacciMaster = { status: "error", analyses: [], errors: { fibonacci_master: String(error.message || error) } };
       renderFibonacciPanel(signals, syncTime, marketState, universe);
-      pushLog("Fibonacci Master", "持仓股", "SYNC", "ERROR", "Fibonacci Master刷新失败，保持观察，不输出可买结论");
+      appendRuntimeChangeLog("Fibonacci Master", "持仓股", "SYNC", "ERROR", "Fibonacci Master刷新失败，保持观察，不输出可买结论");
     });
 }
 
 function findFibonacciMasterAnalysis(symbol) {
   return (currentFibonacciMaster.analyses || []).find((item) => item.symbol === symbol);
+}
+
+function appendRuntimeChangeLog(module, object, oldStatus, newStatus, reason) {
+  currentChangeLog = [
+    {
+      module,
+      object,
+      oldStatus,
+      newStatus,
+      reason,
+      source: "Fibonacci Master System",
+      changedAt: new Date().toISOString(),
+    },
+    ...(currentChangeLog || []),
+  ].slice(0, 80);
 }
 
 function renderAnchorModePanel(signals, syncTime, marketState = currentMarketState) {
