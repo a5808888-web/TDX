@@ -109,6 +109,7 @@ def run_fibonacci_master_system(
             "end_date": primary["end_date"],
             "source": primary["anchor_source"],
         },
+        "chart_bars": _chart_bars(data.history),
         "selected_tools": selected_tools,
         "tool_family": _build_tool_family(primary, data.current_price),
         "multi_wave_table": waves,
@@ -602,6 +603,20 @@ def _build_win_rate_table(levels: list[dict[str, Any]], current_price: float) ->
             "effectiveness": level["effectiveness"],
         }
         for level in levels
+    ]
+
+
+def _chart_bars(history: tuple[MasterPriceBar, ...]) -> list[dict[str, Any]]:
+    return [
+        {
+            "date": bar.date,
+            "open": _price(bar.open),
+            "high": _price(bar.high),
+            "low": _price(bar.low),
+            "close": _price(bar.close),
+            "volume": round(float(bar.volume), 2),
+        }
+        for bar in history[-80:]
     ]
 
 
