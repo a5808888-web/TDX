@@ -1009,6 +1009,87 @@ select {
   font-size: 0.78rem;
 }
 
+.fib-master-card {
+  margin-top: 0.75rem;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.fib-master-chart {
+  margin: 0.65rem 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(8, 10, 14, 0.7);
+}
+
+.fib-master-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 150px;
+}
+
+.kline-wick.up,
+.kline-body.up {
+  stroke: var(--green);
+  fill: rgba(36, 192, 111, 0.62);
+}
+
+.kline-wick.down,
+.kline-body.down {
+  stroke: var(--red);
+  fill: rgba(237, 86, 86, 0.62);
+}
+
+.fib-current-line {
+  stroke: var(--yellow);
+  stroke-width: 1.4;
+  stroke-dasharray: 5 4;
+}
+
+.fib-anchor-high {
+  stroke: rgba(237, 86, 86, 0.85);
+  stroke-width: 1;
+}
+
+.fib-anchor-low {
+  stroke: rgba(36, 192, 111, 0.85);
+  stroke-width: 1;
+}
+
+.fib-master-table {
+  width: 100%;
+  margin: 0.45rem 0 0.75rem;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.fib-master-table table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+}
+
+.fib-master-table th,
+.fib-master-table td {
+  padding: 0.42rem 0.48rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  text-align: left;
+  vertical-align: top;
+}
+
+.fib-master-table th {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 820;
+}
+
 .bottom-actions {
   position: fixed;
   right: 0;
