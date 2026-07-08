@@ -3742,12 +3742,15 @@ function renderFibCard(signal) {
 
 function renderFibonacciMasterAnalysis(master, signal) {
   if (currentFibonacciMaster.status === "loading" && !master) {
-    return `<section class="fib-master-card"><div class="card-title">Fibonacci Master System</div><div class="summary-brief">正在重新执行全工具斐波那契、历史胜率、共振区、DeepSeek与豆包复核。</div></section>`;
+    return `<section class="fib-master-card"><div class="card-title">标准化多工具斐波那契量化引擎</div><div class="summary-brief">正在重新执行全工具斐波那契、历史胜率、共振评分、交易硬规则、DeepSeek与豆包复核。</div></section>`;
   }
   if (!master) {
     const error = currentFibonacciMaster.errors?.[signal.symbol] || currentFibonacciMaster.errors?.fibonacci_master || "等待下一次同步生成";
-    return `<section class="fib-master-card"><div class="card-title">Fibonacci Master System</div><div class="anchor-warning">未生成最终结论：${escapeHtml(error)}</div></section>`;
+    return `<section class="fib-master-card"><div class="card-title">标准化多工具斐波那契量化引擎</div><div class="anchor-warning">未生成最终结论：${escapeHtml(error)}</div></section>`;
   }
+  const std = master.standardized_output || {};
+  const stdConfluence = std["共振"] || {};
+  const stdConclusion = std["最终结论"] || {};
   const buy1 = master.buy_point1 || {};
   const buy2 = master.buy_point2 || {};
   const stop = master.stop_loss || {};
@@ -3755,7 +3758,7 @@ function renderFibonacciMasterAnalysis(master, signal) {
   const zone = master.best_buy_zone || {};
   return `
     <section class="fib-master-card">
-      <div class="card-head"><span class="status-dot ${master.final_action === "可买" ? "buy" : master.final_action === "回避" ? "avoid" : "watch"}"></span><div class="card-title">Fibonacci Master System</div><div class="card-action">${master.final_action || "观察"}</div></div>
+      <div class="card-head"><span class="status-dot ${master.final_action === "可买" ? "buy" : master.final_action === "回避" ? "avoid" : "watch"}"></span><div class="card-title">标准化多工具斐波那契量化引擎</div><div class="card-action">${master.final_action || "观察"}</div></div>
       ${renderFibonacciKline(master)}
       <div class="card-lines">
         ${lineItem("股票名称", `${master.stock_name} ${master.symbol}`)}
@@ -3775,9 +3778,13 @@ function renderFibonacciMasterAnalysis(master, signal) {
         ${lineItem("止盈3", `${formatPriceValue(take.target3?.price)} | ${take.target3?.source || "--"}`)}
         ${lineItem("DeepSeek结论", master.deepseek_review?.deepseek_decision || "等待")}
         ${lineItem("豆包结论", master.doubao_review?.doubao_decision || "等待")}
+        ${lineItem("共振评分", `${stdConfluence["共振评分"] ?? master.confluence_score?.score ?? "--"} | ${stdConfluence["共振等级"] || master.confluence_score?.level || "--"}`)}
+        ${lineItem("三重共振", stdConfluence["是否满足三重共振"] ? "满足" : "未满足")}
+        ${lineItem("是否允许交易", stdConclusion["是否允许交易"] ? "允许" : "不允许")}
         ${lineItem("AI融合结论", `${master.ai_fusion?.fusion_score ?? "--"} | ${master.ai_fusion?.reason || master.reason || "--"}`)}
         ${lineItem("最终动作", master.final_action || "观察")}
         ${lineItem("原因", master.reason || "--")}
+        ${lineItem("风险提示", stdConclusion["风险提示"] || master.ai_fusion?.risk_warning || "--")}
       </div>
       ${renderFibonacciMasterTables(master)}
     </section>
