@@ -1097,7 +1097,7 @@ select {
   left: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(9, 1fr);
   gap: 0.35rem;
   padding: 0.5rem;
   border-top: 1px solid var(--line);
@@ -1105,7 +1105,8 @@ select {
   backdrop-filter: blur(14px);
 }
 
-.bottom-actions button {
+.bottom-actions button,
+.bottom-actions a {
   min-height: 3rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1113,6 +1114,9 @@ select {
   background: var(--panel);
   font-size: 0.82rem;
   font-weight: 800;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
 }
 
 @media (min-width: 760px) {
