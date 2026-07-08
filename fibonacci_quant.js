@@ -71,15 +71,26 @@ function renderChartHeader(item, std) {
 
 function renderKlineChart(item, std) {
   const bars = item.chart_bars || [];
-  const width = 980;
-  const height = 460;
+  const width = 1120;
+  const height = 620;
+  const plotWidth = 930;
+  const labelX = plotWidth + 18;
   const overlays = collectOverlayPrices(item, std);
-  const prices = [...bars.flatMap((bar) => [bar.high, bar.low]), ...overlays.map((line) => line.price)].filter(Number.isFinite);
+  const barPrices = bars.flatMap((bar) => [bar.high, bar.low]).filter(Number.isFinite);
+  const barMin = Math.min(...barPrices);
+  const barMax = Math.max(...barPrices);
+  const barRange = Math.max(0.001, barMax - barMin);
+  const visibleOverlays = overlays.filter((line) => {
+    if (!Number.isFinite(Number(line.price))) return false;
+    if (line.className !== "line-extension") return true;
+    return Number(line.price) <= barMax + barRange * 1.25;
+  });
+  const prices = [...barPrices, ...visibleOverlays.map((line) => line.price)].filter(Number.isFinite);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
-  const padding = 28;
+  const padding = 48;
   const scaleY = (price) => height - padding - ((price - minPrice) / Math.max(0.001, maxPrice - minPrice)) * (height - padding * 2);
-  const step = width / Math.max(1, bars.length);
+  const step = plotWidth / Math.max(1, bars.length);
   const zone = std["买点"]["最佳买入区间"];
   const zoneY1 = scaleY(zone[1]);
   const zoneY2 = scaleY(zone[0]);
@@ -94,13 +105,15 @@ function renderKlineChart(item, std) {
     const bodyH = Math.max(2, Math.abs(closeY - openY));
     return `<line x1="${x.toFixed(1)}" y1="${highY.toFixed(1)}" x2="${x.toFixed(1)}" y2="${lowY.toFixed(1)}" class="wick ${up ? "up" : "down"}"></line><rect x="${(x - Math.max(2, step * 0.28)).toFixed(1)}" y="${bodyY.toFixed(1)}" width="${Math.max(3, step * 0.56).toFixed(1)}" height="${bodyH.toFixed(1)}" class="body ${up ? "up" : "down"}"></rect>`;
   }).join("");
-  const lines = overlays.map((line) => {
+  const lines = visibleOverlays.map((line, index) => {
     const y = scaleY(line.price);
-    return `<line x1="0" y1="${y.toFixed(1)}" x2="${width}" y2="${y.toFixed(1)}" class="${line.className}"></line><text x="${width - 190}" y="${(y - 4).toFixed(1)}" class="axis-label">${line.label} ${formatPrice(line.price)}</text>`;
+    const labelY = Math.max(18, Math.min(height - 12, y - 6 - (index % 3) * 12));
+    return `<line x1="0" y1="${y.toFixed(1)}" x2="${plotWidth}" y2="${y.toFixed(1)}" class="${line.className}"></line><text x="${labelX}" y="${labelY.toFixed(1)}" class="axis-label">${line.label} ${formatPrice(line.price)}</text>`;
   }).join("");
   document.getElementById("klineChart").innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="K线图与斐波那契价格轴">
-      <rect x="0" y="${Math.min(zoneY1, zoneY2).toFixed(1)}" width="${width}" height="${Math.abs(zoneY2 - zoneY1).toFixed(1)}" class="line-zone"></rect>
+      <rect x="0" y="${Math.min(zoneY1, zoneY2).toFixed(1)}" width="${plotWidth}" height="${Math.abs(zoneY2 - zoneY1).toFixed(1)}" class="line-zone"></rect>
+      <line x1="${plotWidth}" y1="0" x2="${plotWidth}" y2="${height}" class="label-divider"></line>
       ${candles}
       ${lines}
     </svg>
