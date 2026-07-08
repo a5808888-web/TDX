@@ -1,0 +1,259 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --panel: #171a20;
+  --panel-2: #1f242c;
+  --text: #f4f7fb;
+  --muted: #9aa5b1;
+  --line: rgba(255, 255, 255, 0.12);
+  --green: #24c06f;
+  --red: #ed5656;
+  --yellow: #f6bf26;
+  --blue: #60a5fa;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background: var(--bg);
+  font-family: Inter, "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+}
+
+.fib-page {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 18px;
+}
+
+.fib-header,
+.workspace,
+.tables {
+  display: grid;
+  gap: 14px;
+}
+
+.fib-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--yellow);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+h1 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: 0;
+}
+
+.fib-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.fib-controls select,
+.fib-controls button,
+.fib-controls a {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  background: var(--panel);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.status-panel,
+.chart-panel,
+.analysis-panel,
+.tables > div {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.status-panel {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+  padding: 12px;
+}
+
+.status-panel div {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.status-panel strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+}
+
+.workspace {
+  grid-template-columns: minmax(0, 1.8fr) minmax(320px, 0.8fr);
+}
+
+.chart-panel,
+.analysis-panel,
+.tables > div {
+  padding: 14px;
+}
+
+.chart-header {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.metric {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+
+.metric span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.metric strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+}
+
+.kline-chart {
+  overflow-x: auto;
+}
+
+.kline-chart svg {
+  display: block;
+  width: 100%;
+  min-width: 760px;
+  height: auto;
+}
+
+.wick.up,
+.body.up {
+  stroke: var(--green);
+  fill: rgba(36, 192, 111, 0.68);
+}
+
+.wick.down,
+.body.down {
+  stroke: var(--red);
+  fill: rgba(237, 86, 86, 0.68);
+}
+
+.line-current {
+  stroke: var(--yellow);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+
+.line-retracement {
+  stroke: var(--green);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.line-extension {
+  stroke: var(--blue);
+  stroke-width: 1;
+  stroke-dasharray: 5 3;
+}
+
+.line-stop {
+  stroke: var(--red);
+  stroke-width: 1.4;
+}
+
+.line-zone {
+  fill: rgba(246, 191, 38, 0.12);
+}
+
+.axis-label {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.analysis-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.analysis-card {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+
+.analysis-card h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.analysis-card p,
+.analysis-card li {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.tables {
+  grid-template-columns: 1fr 1fr;
+  margin-top: 14px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th,
+td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 860px) {
+  .fib-header,
+  .workspace,
+  .tables,
+  .status-panel,
+  .chart-header {
+    grid-template-columns: 1fr;
+  }
+
+  .fib-controls {
+    justify-content: flex-start;
+  }
+}

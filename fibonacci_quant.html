@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>斐波那契量化引擎 | 蝗虫计划</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./fibonacci_quant.css" />
+  </head>
+  <body>
+    <main class="fib-page">
+      <header class="fib-header">
+        <div>
+          <p class="eyebrow">Standardized Multi-Tool Fibonacci Quant Engine</p>
+          <h1>斐波那契量化决策引擎</h1>
+        </div>
+        <div class="fib-controls">
+          <select id="symbolSelect" aria-label="选择股票">
+            <option value="601689.SH">拓普集团 601689.SH</option>
+            <option value="000977.SZ">浪潮信息 000977.SZ</option>
+          </select>
+          <button id="refreshButton" type="button">重新同步</button>
+          <a href="./trading_cockpit.html">返回驾驶舱</a>
+        </div>
+      </header>
+
+      <section id="statusPanel" class="status-panel">
+        <div>状态</div>
+        <strong>等待同步</strong>
+      </section>
+
+      <section class="workspace">
+        <section class="chart-panel">
+          <div id="chartHeader" class="chart-header"></div>
+          <div id="klineChart" class="kline-chart"></div>
+        </section>
+        <aside id="analysisPanel" class="analysis-panel"></aside>
+      </section>
+
+      <section class="tables">
+        <div id="waveTable"></div>
+        <div id="toolTable"></div>
+        <div id="riskTable"></div>
+        <div id="aiPanel"></div>
+      </section>
+    </main>
+    <script src="./fibonacci_quant.js"></script>
+  </body>
+</html>
