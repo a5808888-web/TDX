@@ -5,9 +5,15 @@ import os
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from local_env import load_local_env
+from ai_consensus_layer import build_default_dual_ai_layer
+from fibonacci_master_system import (
+    FibonacciMasterInput,
+    fetch_akshare_history,
+    run_fibonacci_master_system,
+)
 from i18n import get_i18n
 from market_data_connectors import AKShareMarketConnector, AShareQuery, ConnectorError
 from locust_realtime_verification import (
@@ -163,6 +169,11 @@ A_SHARE_COCKPIT_SYMBOLS = (
     "000003.SZ",
 )
 
+ACCOUNT_HOLDING_NAMES = {
+    "601689.SH": "拓普集团",
+    "000977.SZ": "浪潮信息",
+}
+
 _LOCKED_MARKET_CACHE: dict[str, object] | None = None
 _LOCKED_MARKET_CACHE_AT: datetime | None = None
 _LOCKED_MARKET_CACHE_LOCK = threading.Lock()
@@ -170,7 +181,9 @@ _LOCKED_MARKET_CACHE_LOCK = threading.Lock()
 
 class LocustDashboardHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = parse_qs(parsed.query)
         if path == "/api/sync-status":
             self._send_json(sync_status_to_output(_sample_sync_panel()))
             return
@@ -223,6 +236,9 @@ class LocustDashboardHandler(SimpleHTTPRequestHandler):
             return
         if path == "/api/full-history-fib-sample":
             self._send_json(_sample_full_history_fib_output())
+            return
+        if path == "/api/fibonacci-master":
+            self._send_json(_fibonacci_master_api_output(query))
             return
         if path == "/api/market-heatmap-sample":
             self._send_json(_sample_market_heatmap_output())
@@ -385,6 +401,74 @@ def _locked_market_error_item(symbol: str, timestamp: datetime, error: str) -> d
 
 def _format_api_time(value: datetime) -> str:
     return value.astimezone().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _fibonacci_master_api_output(query: dict[str, list[str]]) -> dict[str, object]:
+    requested = query.get("symbols", [""])[0]
+    symbols = tuple(
+        item.strip().upper()
+        for item in requested.split(",")
+        if item.strip()
+    ) or tuple(ACCOUNT_HOLDING_NAMES)
+    symbols = tuple(symbol for symbol in symbols if symbol in A_SHARE_COCKPIT_SYMBOLS or symbol in ACCOUNT_HOLDING_NAMES)[:3]
+    if not symbols:
+        return {"system": "Fibonacci Master System", "analyses": (), "errors": {"symbols": "No supported A-share symbols requested."}}
+
+    try:
+        ai_layer = build_default_dual_ai_layer()
+    except Exception:
+        ai_layer = None
+
+    locked = _locked_market_data_output()
+    items = locked.get("items", {}) if isinstance(locked, dict) else {}
+    analyses: list[dict[str, object]] = []
+    errors: dict[str, str] = {}
+    for symbol in symbols:
+        try:
+            price_payload = _locked_price_for_symbol(symbol, items)
+            history = fetch_akshare_history(symbol)
+            analyses.append(
+                run_fibonacci_master_system(
+                    FibonacciMasterInput(
+                        stock_name=_stock_name_for_symbol(symbol),
+                        symbol=symbol,
+                        current_price=price_payload["value"],
+                        data_source=str(price_payload.get("source") or "AKShare"),
+                        updated_at=str(price_payload.get("timestamp") or _format_api_time(datetime.now(timezone.utc))),
+                        history=history,
+                    ),
+                    ai_layer=ai_layer,
+                )
+            )
+        except Exception as exc:
+            errors[symbol] = f"{type(exc).__name__}: {exc}"
+
+    return {
+        "system": "Fibonacci Master System",
+        "source_policy": "current_price and history must come from AKShare or real market connectors; AI cannot generate prices",
+        "generated_at": _format_api_time(datetime.now(timezone.utc)),
+        "analyses": analyses,
+        "errors": errors,
+    }
+
+
+def _locked_price_for_symbol(symbol: str, items: object) -> dict[str, object]:
+    if isinstance(items, dict):
+        item = items.get(symbol)
+        if isinstance(item, dict):
+            price = item.get("price")
+            if isinstance(price, dict) and price.get("value"):
+                return price
+    snapshot = AKShareMarketConnector().fetch_snapshot(AShareQuery(symbol=symbol, set_code=0, trend=50.0, volatility=30.0))
+    return {
+        "value": snapshot.price,
+        "source": snapshot.source.value,
+        "timestamp": _format_api_time(datetime.now(timezone.utc)),
+    }
+
+
+def _stock_name_for_symbol(symbol: str) -> str:
+    return ACCOUNT_HOLDING_NAMES.get(symbol, symbol)
 
 
 def _sample_realtime_stocks():
