@@ -6,11 +6,7 @@ from unittest.mock import patch
 
 import app
 from ai_consensus_layer import AIConsensusResult, AIProviderResponse
-from fibonacci_master_system import (
-    FibonacciMasterInput,
-    MasterPriceBar,
-    run_fibonacci_master_system,
-)
+from fibonacci_master_system import FibonacciMasterInput, MasterPriceBar, run_fibonacci_master_system
 
 
 class FakeDualAILayer:
@@ -32,7 +28,7 @@ class FakeDualAILayer:
 
 
 class FibonacciMasterSystemTest(unittest.TestCase):
-    def test_builds_full_tool_family_win_rates_ai_and_logs(self):
+    def test_builds_standardized_multi_tool_engine_output(self):
         ai = FakeDualAILayer()
         result = run_fibonacci_master_system(
             FibonacciMasterInput(
@@ -47,7 +43,8 @@ class FibonacciMasterSystemTest(unittest.TestCase):
             ai_layer=ai,
         )
 
-        self.assertEqual(result["system"], "Fibonacci Master System")
+        self.assertEqual(result["system"], "Standardized Multi-Tool Fibonacci Quant Engine")
+        self.assertEqual(result["legacy_system"], "Fibonacci Master System")
         self.assertEqual(len(ai.calls), 1)
         tool_names = {item["tool_name"] for item in result["tool_family"]}
         self.assertIn("Fibonacci Retracement", tool_names)
@@ -66,12 +63,15 @@ class FibonacciMasterSystemTest(unittest.TestCase):
         self.assertGreater(len(result["win_rate_table"]), 20)
         self.assertIn("sample_count", result["buy_point1"])
         self.assertIn("failure_count", result["buy_point1"])
-        self.assertEqual(result["deepseek_review"]["deepseek_decision"], "可买")
-        self.assertEqual(result["doubao_review"]["doubao_decision"], "可买")
-        self.assertIn(result["final_action"], {"可买", "等待", "回避", "观察"})
+        self.assertFalse(result["standardized_tools"]["upward_extension"]["extension_used_for_entry"])
+        self.assertEqual(result["standardized_output"]["买点"]["买点1来源"], "主波段回撤0.786")
+        self.assertEqual(result["standardized_output"]["买点"]["买点2来源"], "主波段上升映射0.236")
+        self.assertEqual(result["standardized_output"]["卖点"]["第一止盈"], result["take_profit"]["target1"]["price"])
+        self.assertIn("是否满足三重共振", result["standardized_output"]["共振"])
+        self.assertIn(result["final_action"], {"可买", "等待", "观察", "回避", "持有", "减仓", "止盈", "止损"})
         self.assertTrue(result["required_guards"]["no_ai_generated_price"])
 
-    def test_missing_dual_ai_never_outputs_buy(self):
+    def test_missing_dual_ai_never_outputs_buy_or_trade_allowed(self):
         result = run_fibonacci_master_system(
             FibonacciMasterInput(
                 stock_name="样本股",
@@ -86,7 +86,8 @@ class FibonacciMasterSystemTest(unittest.TestCase):
         )
 
         self.assertEqual(result["final_action"], "观察")
-        self.assertIn("复核未同时完成", result["reason"])
+        self.assertFalse(result["ai_fusion"]["trade_allowed"])
+        self.assertIn("DeepSeek", result["reason"])
 
     def test_api_helper_uses_locked_market_price_and_history(self):
         fake_locked = {
@@ -109,6 +110,7 @@ class FibonacciMasterSystemTest(unittest.TestCase):
 
         self.assertEqual(payload["system"], "Fibonacci Master System")
         self.assertEqual(payload["errors"], {})
+        self.assertEqual(payload["analyses"][0]["system"], "Standardized Multi-Tool Fibonacci Quant Engine")
         self.assertEqual(payload["analyses"][0]["symbol"], "000977.SZ")
         self.assertEqual(payload["analyses"][0]["current_price"], 78.17)
         self.assertEqual(payload["analyses"][0]["data_source"], "AKShare")

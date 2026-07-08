@@ -11,14 +11,15 @@ from ai_consensus_layer import AIAnalysisRequest, AIConsensusError, AIConsensusR
 
 
 RETRACEMENT_RATIOS: tuple[float, ...] = (0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
-UPWARD_RATIOS: tuple[float, ...] = (0.236, 1.0)
-EXTENSION_RATIOS: tuple[float, ...] = (1.0, 1.272, 1.414, 1.618, 2.0, 2.618)
+UPWARD_RATIOS: tuple[float, ...] = (0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0, 1.272, 1.382, 1.618, 2.0, 2.618)
+EXTENSION_RATIOS: tuple[float, ...] = (1.0, 1.272, 1.382, 1.618, 2.0, 2.618)
 CHANNEL_RATIOS: tuple[float, ...] = (0.0, 0.382, 0.5, 0.618, 1.0, 1.618)
-TIME_RATIOS: tuple[float, ...] = (1.0, 1.618, 2.618)
+TIME_RATIOS: tuple[int, ...] = (3, 5, 8, 13, 21, 34, 55)
 GEOMETRY_RATIOS: tuple[float, ...] = (0.382, 0.5, 0.618, 1.0, 1.618)
 TOUCH_TOLERANCE = 0.006
 REACTION_LOOKAHEAD_DAYS = 5
 REACTION_THRESHOLD = 0.018
+VALID_ACTIONS: tuple[str, ...] = ("可买", "等待", "观察", "回避", "持有", "减仓", "止盈", "止损")
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,18 @@ class FibonacciMasterInput:
     history: tuple[MasterPriceBar, ...]
     manual_waves: tuple[ManualWave, ...] = ()
     log_path: str | None = "reports/fibonacci_master_log.jsonl"
+    sector: str = ""
+    stock_identity: str = "交易池"
+    is_holding: bool = False
+    holding_cost: float | None = None
+    holding_quantity: float | None = None
+    t1_locked: bool = False
+    is_core_or_lucky: bool = False
+    is_trade_pool: bool = True
+    data_status: str = "实时"
+    day_high: float | None = None
+    sector_heat: float | None = None
+    institutional_flow_score: float | None = None
 
 
 class AILayer(Protocol):
@@ -76,6 +89,9 @@ def run_fibonacci_master_system(
     buy_point2 = _build_trade_point(primary, "upward_projection", 0.236, "buy_point2", data.current_price)
     stop_loss = _build_stop_loss(primary, confluence_zones)
     take_profit = _build_take_profit(primary)
+    standardized_tools = _build_standardized_tool_metrics(primary, data)
+    account_context = _build_account_context(data)
+    pre_ai_confluence = _score_confluence(data, standardized_tools, confluence_zones, None)
 
     ai_payload = _build_ai_payload(
         data=data,
@@ -84,17 +100,43 @@ def run_fibonacci_master_system(
         selected_tools=selected_tools,
         waves=waves,
         confluence_zones=confluence_zones,
+        standardized_tools=standardized_tools,
+        confluence_score=pre_ai_confluence,
+        account_context=account_context,
         buy_point1=buy_point1,
         buy_point2=buy_point2,
         stop_loss=stop_loss,
         take_profit=take_profit,
     )
     ai_result = _run_required_ai_review(ai_layer, ai_payload)
-    final_decision = _merge_final_decision(ai_result, buy_point1, buy_point2, confluence_zones, data.current_price)
+    confluence_score = _score_confluence(data, standardized_tools, confluence_zones, ai_result)
+    final_decision = _merge_standardized_decision(
+        data=data,
+        ai_result=ai_result,
+        tools=standardized_tools,
+        confluence=confluence_score,
+        buy_point1=buy_point1,
+        buy_point2=buy_point2,
+        stop_loss=stop_loss,
+        take_profit=take_profit,
+    )
+    standardized_output = _build_standardized_output(
+        data=data,
+        primary=primary,
+        tools=standardized_tools,
+        buy_point1=buy_point1,
+        buy_point2=buy_point2,
+        stop_loss=stop_loss,
+        take_profit=take_profit,
+        confluence=confluence_score,
+        final_decision=final_decision,
+        account_context=account_context,
+    )
 
     output = {
-        "system": "Fibonacci Master System",
-        "version": "1.0",
+        "system": "Standardized Multi-Tool Fibonacci Quant Engine",
+        "legacy_system": "Fibonacci Master System",
+        "version": "2.0",
         "stock_name": data.stock_name,
         "symbol": data.symbol,
         "current_price": round(data.current_price, 3),
@@ -126,6 +168,10 @@ def run_fibonacci_master_system(
         },
         "stop_loss": stop_loss,
         "take_profit": take_profit,
+        "standardized_tools": standardized_tools,
+        "confluence_score": confluence_score,
+        "account_context": account_context,
+        "standardized_output": standardized_output,
         "deepseek_review": ai_result["deepseek_review"],
         "doubao_review": ai_result["doubao_review"],
         "ai_fusion": final_decision,
@@ -652,6 +698,413 @@ def _build_win_rate_table(levels: list[dict[str, Any]], current_price: float) ->
     ]
 
 
+def _build_standardized_tool_metrics(primary: dict[str, Any], data: FibonacciMasterInput) -> dict[str, Any]:
+    low = primary["anchor_low"]
+    high = primary["anchor_high"]
+    price_range = primary["range"]
+    current = data.current_price
+    retracement = {f"{ratio:.3f}": _price(high - ratio * price_range) for ratio in RETRACEMENT_RATIOS}
+    upward = {f"{ratio:.3f}": _price(low + ratio * price_range) for ratio in UPWARD_RATIOS}
+    channel = _build_trend_channel(primary, data.history)
+    arcs = _build_speed_resistance_arcs(primary, current)
+    spiral = _build_spiral(primary, current)
+    time_window = _build_time_window(primary, data.history)
+    best_low = retracement["0.786"]
+    best_high = retracement["0.618"]
+    retracement_state = _retracement_state(current, low, best_low, best_high)
+    return {
+        "tool_weights": {
+            "fibonacci_extension": {"trading_weight": "最高", "decision_weight": "止盈目标，不直接开仓"},
+            "fibonacci_retracement": {"trading_weight": "高", "decision_weight": "核心回调入场"},
+            "fibonacci_channel": {"trading_weight": "中高", "decision_weight": "趋势强弱与破位确认"},
+            "speed_resistance_arcs": {"trading_weight": "中", "decision_weight": "动态支撑验证，不能单独开仓"},
+            "fibonacci_spiral": {"trading_weight": "低", "decision_weight": "大周期拐点辅助，不能单独开仓"},
+            "fibonacci_time_window": {"trading_weight": "最低", "decision_weight": "时间共振加分，不能单独开仓"},
+        },
+        "retracement": {
+            "levels": retracement,
+            "current_position": retracement_state,
+            "in_best_buy_zone": best_low <= current <= best_high,
+            "best_buy_zone": [_price(best_low), _price(best_high)],
+        },
+        "upward_extension": {
+            "levels": upward,
+            "take_profit_1": upward["1.272"],
+            "take_profit_2": upward["1.618"],
+            "take_profit_3": upward["2.618"],
+            "extension_used_for_entry": False,
+            "distances_pct": {key: round((current - value) / value * 100, 2) for key, value in upward.items() if float(key) >= 1.0},
+        },
+        "trend_channel": channel,
+        "speed_resistance_arcs": arcs,
+        "spiral": spiral,
+        "time_window": time_window,
+        "hard_rules": {
+            "extension_is_take_profit_only": True,
+            "time_window_cannot_open_trade_alone": True,
+            "spiral_cannot_open_trade_alone": True,
+            "single_wick_break_is_not_breakdown": True,
+            "two_close_break_required": True,
+        },
+    }
+
+
+def _build_trend_channel(primary: dict[str, Any], history: tuple[MasterPriceBar, ...]) -> dict[str, Any]:
+    low = primary["anchor_low"]
+    high = primary["anchor_high"]
+    price_range = primary["range"]
+    recent = history[-20:] if len(history) >= 20 else history
+    mid = _price(low + 0.5 * price_range)
+    strong = _price(low + 0.618 * price_range)
+    lower = _price(low)
+    upper = _price(high)
+    consecutive_break = len(recent) >= 2 and recent[-1].close < strong and recent[-2].close < strong
+    wick_only = bool(recent and recent[-1].low < strong and recent[-1].close >= strong)
+    if consecutive_break:
+        status = "趋势结构破坏"
+    elif recent and recent[-1].close >= mid:
+        status = "趋势偏强"
+    elif recent and recent[-1].close >= strong:
+        status = "趋势健康"
+    else:
+        status = "趋势转弱观察"
+    return {
+        "upper_track": upper,
+        "middle_0_500": mid,
+        "strong_0_618": strong,
+        "lower_track": lower,
+        "trend_status": status,
+        "two_close_breakdown": consecutive_break,
+        "single_wick_break_only": wick_only,
+        "validity": "有效" if not consecutive_break else "破位",
+    }
+
+
+def _build_speed_resistance_arcs(primary: dict[str, Any], current_price: float) -> dict[str, Any]:
+    low = primary["anchor_low"]
+    price_range = primary["range"]
+    levels = {f"{ratio:.3f}": _price(low + ratio * price_range) for ratio in (0.382, 0.5, 0.618)}
+    near_0618 = _near_price(current_price, levels["0.618"], 2.0)
+    return {
+        "levels": levels,
+        "core_0_618_validation": near_0618,
+        "axis_locked": True,
+        "validity": "有效，可做共振验证" if near_0618 else "仅作动态支撑参考",
+        "standalone_signal_allowed": False,
+    }
+
+
+def _build_spiral(primary: dict[str, Any], current_price: float) -> dict[str, Any]:
+    low = primary["anchor_low"]
+    price_range = primary["range"]
+    inner = _price(low + 0.618 * price_range)
+    trend = _price(low + 1.0 * price_range)
+    reversal = _price(low + 1.618 * price_range)
+    axis_valid = True
+    return {
+        "center": primary["low_date"],
+        "end": primary["high_date"],
+        "inner_0_618_correction": inner,
+        "trend_1_000": trend,
+        "outer_1_618_reversal": reversal,
+        "near_spiral_zone": _near_price(current_price, inner, 2.0) or _near_price(current_price, reversal, 2.0),
+        "axis_scale_valid": axis_valid,
+        "validity": "仅供大级别拐点辅助" if axis_valid else "坐标缩放扭曲，数据作废",
+        "standalone_signal_allowed": False,
+    }
+
+
+def _build_time_window(primary: dict[str, Any], history: tuple[MasterPriceBar, ...]) -> dict[str, Any]:
+    zero_date = primary["high_date"]
+    zero_index = _find_bar_index(history, zero_date)
+    current_index = len(history) - 1
+    bars_from_zero = max(0, current_index - zero_index)
+    windows = []
+    in_core = False
+    for window in TIME_RATIOS:
+        distance = abs(bars_from_zero - window)
+        hit = distance <= (1 if window in (8, 13, 21) else 2)
+        if hit and window in (8, 13, 21):
+            in_core = True
+        windows.append({"window": window, "distance": distance, "active": hit, "core": window in (8, 13, 21)})
+    return {
+        "zero_bar_date": zero_date,
+        "current_bar_index_from_zero": bars_from_zero,
+        "windows": windows,
+        "near_core_8_13_21": in_core,
+        "description": "时间窗口只做共振加分，不能单独生成买卖信号",
+    }
+
+
+def _build_account_context(data: FibonacciMasterInput) -> dict[str, Any]:
+    floating_pnl = None
+    if data.is_holding and data.holding_cost and data.holding_cost > 0:
+        floating_pnl = round((data.current_price - data.holding_cost) / data.holding_cost * 100, 2)
+    return {
+        "is_holding": data.is_holding,
+        "holding_cost": data.holding_cost,
+        "holding_quantity": data.holding_quantity,
+        "floating_pnl_pct": floating_pnl,
+        "t1_locked": data.t1_locked,
+        "stock_identity": data.stock_identity,
+        "is_core_or_lucky": data.is_core_or_lucky,
+        "is_trade_pool": data.is_trade_pool,
+        "sector": data.sector,
+    }
+
+
+def _score_confluence(
+    data: FibonacciMasterInput,
+    tools: dict[str, Any],
+    confluence_zones: list[dict[str, Any]],
+    ai_result: dict[str, Any] | None,
+) -> dict[str, Any]:
+    score = 0
+    reasons: list[str] = []
+    participants: list[str] = []
+    current = data.current_price
+    retracement = tools["retracement"]
+    upward = tools["upward_extension"]
+    channel = tools["trend_channel"]
+    arcs = tools["speed_resistance_arcs"]
+    spiral = tools["spiral"]
+    time_window = tools["time_window"]
+
+    def add(points: int, label: str) -> None:
+        nonlocal score
+        score += points
+        reasons.append(f"+{points} {label}")
+        participants.append(label)
+
+    def deduct(points: int, label: str) -> None:
+        nonlocal score
+        score -= points
+        reasons.append(f"-{points} {label}")
+
+    if _near_price(current, retracement["levels"]["0.786"], 2.0):
+        add(25, "回撤0.786触发")
+    if _near_price(current, retracement["levels"]["0.618"], 2.0):
+        add(20, "回撤0.618触发")
+    if _near_price(current, upward["levels"]["0.236"], 2.0):
+        add(20, "上升映射0.236触发")
+    if _near_price(current, channel["strong_0_618"], 2.0):
+        add(15, "趋势通道0.618触发")
+    if arcs["core_0_618_validation"]:
+        add(10, "速度阻力弧0.618触发")
+    if spiral["near_spiral_zone"] and spiral["axis_scale_valid"]:
+        add(8, "螺旋0.618或1.618触发")
+    if time_window["near_core_8_13_21"]:
+        add(10, "时间窗口8/13/21触发")
+    if _has_reversal_candle(data.history):
+        add(8, "反转K线")
+    if _has_volume_confirmation(data.history):
+        add(8, "量能确认")
+    if confluence_zones:
+        add(min(12, 4 * confluence_zones[0]["participating_tool_count"]), "多波段斐波那契重叠")
+
+    if current > retracement["best_buy_zone"][1]:
+        deduct(20, "当前价高于最佳买入波段")
+    day_high = data.day_high or data.history[-1].high
+    if current >= day_high * 0.98:
+        deduct(20, "当前价接近阶段/日内高点")
+    if data.data_status in {"延迟", "数据延迟"}:
+        deduct(30, "数据延迟")
+    if data.data_status in {"失效", "数据失效"}:
+        deduct(100, "数据失效")
+    if channel["two_close_breakdown"]:
+        deduct(50, "连续两根收盘破位")
+    if data.sector_heat is not None and data.sector_heat < 60:
+        deduct(20, "板块热度低于60")
+    if data.institutional_flow_score is not None and data.institutional_flow_score < 45:
+        deduct(20, "机构资金流出")
+    if ai_result and ai_result.get("completed") and ai_result.get("deepseek_review") and ai_result.get("doubao_review"):
+        if _decision_conflict(ai_result["deepseek_review"]["deepseek_decision"], ai_result["doubao_review"]["doubao_decision"]):
+            deduct(15, "AI分析分歧严重")
+
+    price_condition = (
+        _near_price(current, channel["strong_0_618"], 2.0)
+        or arcs["core_0_618_validation"]
+        or (spiral["near_spiral_zone"] and spiral["axis_scale_valid"])
+        or _near_price(current, upward["levels"]["1.272"], 2.0)
+        or _near_price(current, upward["levels"]["1.618"], 2.0)
+    )
+    retrace_condition = (
+        retracement["in_best_buy_zone"]
+        or _near_price(current, retracement["levels"]["0.786"], 2.0)
+        or _near_price(current, retracement["levels"]["0.618"], 2.0)
+    )
+    confirmation_condition = time_window["near_core_8_13_21"] or _has_reversal_candle(data.history) or _has_volume_confirmation(data.history)
+    triple = price_condition and retrace_condition and confirmation_condition
+    score = max(0, min(100, score))
+    return {
+        "score": score,
+        "level": _confluence_score_level(score),
+        "participants": tuple(dict.fromkeys(participants)),
+        "reasons": tuple(reasons),
+        "triple_confluence": triple,
+        "triple_conditions": {
+            "price_dynamic_tool": price_condition,
+            "retracement_level": retrace_condition,
+            "time_or_kline_confirmation": confirmation_condition,
+        },
+        "hard_rule": "评分只做辅助，不满足三重共振不得输出可买",
+    }
+
+
+def _merge_standardized_decision(
+    data: FibonacciMasterInput,
+    ai_result: dict[str, Any],
+    tools: dict[str, Any],
+    confluence: dict[str, Any],
+    buy_point1: dict[str, Any],
+    buy_point2: dict[str, Any],
+    stop_loss: dict[str, Any],
+    take_profit: dict[str, Any],
+) -> dict[str, Any]:
+    current = data.current_price
+    best_zone = tools["retracement"]["best_buy_zone"]
+    channel = tools["trend_channel"]
+    ai_conflict = bool(
+        ai_result.get("completed")
+        and _decision_conflict(ai_result["deepseek_review"]["deepseek_decision"], ai_result["doubao_review"]["doubao_decision"])
+    )
+    data_invalid = data.data_status in {"失效", "数据失效"}
+    near_tp1 = _near_price(current, take_profit["target1"]["price"], 2.0)
+    near_tp2 = _near_price(current, take_profit["target2"]["price"], 2.0)
+    if data_invalid:
+        action, allowed, reason = "回避", False, "行情数据失效，禁止生成新的买入建议。"
+    elif data.is_holding and current <= stop_loss["price"]:
+        action, allowed, reason = "止损", True, "已持仓且当前价跌破止损价，执行风控优先。"
+    elif data.is_holding and near_tp2:
+        action, allowed, reason = "止盈", True, "已持仓且接近核心止盈1.618，优先保护利润。"
+    elif data.is_holding and near_tp1:
+        action, allowed, reason = "减仓", True, "已持仓且接近第一止盈1.272，可分批保护利润。"
+    elif data.is_holding and not channel["two_close_breakdown"]:
+        action, allowed, reason = "持有", True, "已持仓且趋势通道未被连续两根收盘破坏。"
+    elif ai_conflict:
+        action, allowed, reason = "观察", False, "DeepSeek与豆包结论分歧，进入观察，等待下一次同步确认。"
+    elif channel["two_close_breakdown"]:
+        action, allowed, reason = "回避", False, "连续两根收盘跌破趋势通道，结构破坏。"
+    elif not ai_result.get("completed") and not data.is_holding:
+        action, allowed, reason = "观察", False, "DeepSeek与豆包未同时完成复核，非持仓股票禁止输出可买或交易动作。"
+    elif current > best_zone[1] and data.is_core_or_lucky:
+        action, allowed, reason = "等待", False, "核心股/幸运区身份不等于今天可买，当前价高于最佳买入波段，等待回撤。"
+    elif current > best_zone[1]:
+        action, allowed, reason = "等待", False, "当前价格高于最佳买入波段，禁止追高。"
+    elif confluence["triple_confluence"] and best_zone[0] <= current <= best_zone[1] and ai_result.get("completed"):
+        action, allowed, reason = "可买", True, "价格、回撤关键位、时间或K线确认形成三重共振。"
+    elif confluence["score"] >= 70:
+        action, allowed, reason = "等待", False, "共振分达到中等以上，但三重共振或AI复核条件不足。"
+    elif confluence["score"] >= 50:
+        action, allowed, reason = "观察", False, "弱共振，只观察，不进入交易池。"
+    else:
+        action, allowed, reason = "回避", False, "无效信号，不交易。"
+
+    return {
+        "final_action": action,
+        "fusion_score": confluence["score"],
+        "conflict": ai_conflict,
+        "reason": reason,
+        "trade_allowed": allowed,
+        "risk_warning": _risk_warning(data, tools, confluence),
+        "weights": {"structure": 0.70, "historical_validation": 0.15, "ai_explanation": 0.15},
+    }
+
+
+def _build_standardized_output(
+    data: FibonacciMasterInput,
+    primary: dict[str, Any],
+    tools: dict[str, Any],
+    buy_point1: dict[str, Any],
+    buy_point2: dict[str, Any],
+    stop_loss: dict[str, Any],
+    take_profit: dict[str, Any],
+    confluence: dict[str, Any],
+    final_decision: dict[str, Any],
+    account_context: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "股票名称": data.stock_name,
+        "股票代码": data.symbol,
+        "当前价格": _price(data.current_price),
+        "数据来源": data.data_source,
+        "更新时间": data.updated_at,
+        "数据状态": data.data_status,
+        "所属板块": data.sector,
+        "股票身份": data.stock_identity,
+        "是否持仓": data.is_holding,
+        "持仓成本": data.holding_cost,
+        "浮动盈亏": account_context["floating_pnl_pct"],
+        "主波段": {
+            "A点日期": primary["low_date"],
+            "A点价格": primary["anchor_low"],
+            "B点日期": primary["high_date"],
+            "B点价格": primary["anchor_high"],
+            "波段方向": "上升" if primary["high_date"] >= primary["low_date"] else "下降",
+            "波段有效性": "有效" if primary["is_valid"] else "无效",
+        },
+        "回撤斐波那契": tools["retracement"]["levels"],
+        "上升映射与扩展": tools["upward_extension"]["levels"],
+        "趋势通道": {
+            "趋势状态": tools["trend_channel"]["trend_status"],
+            "中线0.5": tools["trend_channel"]["middle_0_500"],
+            "强支撑0.618": tools["trend_channel"]["strong_0_618"],
+            "是否破位": tools["trend_channel"]["two_close_breakdown"],
+        },
+        "速度阻力弧": {
+            "0.382": tools["speed_resistance_arcs"]["levels"]["0.382"],
+            "0.500": tools["speed_resistance_arcs"]["levels"]["0.500"],
+            "0.618": tools["speed_resistance_arcs"]["levels"]["0.618"],
+            "有效性": tools["speed_resistance_arcs"]["validity"],
+        },
+        "螺旋": {
+            "0.618修正区": tools["spiral"]["inner_0_618_correction"],
+            "1.618反转区": tools["spiral"]["outer_1_618_reversal"],
+            "有效性": tools["spiral"]["validity"],
+        },
+        "时间窗口": {
+            "当前K线序号": tools["time_window"]["current_bar_index_from_zero"],
+            "是否处于8/13/21窗口": tools["time_window"]["near_core_8_13_21"],
+            "窗口说明": tools["time_window"]["description"],
+        },
+        "买点": {
+            "买点1": buy_point1["price"],
+            "买点1来源": "主波段回撤0.786",
+            "买点2": buy_point2["price"],
+            "买点2来源": "主波段上升映射0.236",
+            "最佳买入区间": tools["retracement"]["best_buy_zone"],
+        },
+        "卖点": {
+            "第一止盈": take_profit["target1"]["price"],
+            "核心止盈": take_profit["target2"]["price"],
+            "强趋势止盈": take_profit["target3"]["price"],
+            "止损": stop_loss["price"],
+        },
+        "共振": {
+            "共振评分": confluence["score"],
+            "共振等级": confluence["level"],
+            "参与共振工具": confluence["participants"],
+            "是否满足三重共振": confluence["triple_confluence"],
+        },
+        "最终结论": {
+            "当前动作": final_decision["final_action"],
+            "是否允许交易": final_decision["trade_allowed"],
+            "原因": final_decision["reason"],
+            "风险提示": final_decision["risk_warning"],
+        },
+    }
+
+
+def _retracement_state(current: float, anchor_low: float, best_low: float, best_high: float) -> str:
+    if current > best_high:
+        return "等待回撤"
+    if best_low <= current <= best_high:
+        return "进入最佳买入波段"
+    if best_low > current >= anchor_low:
+        return "跌破买入区，观察是否失效"
+    return "波段结构失效"
+
+
 def _chart_bars(history: tuple[MasterPriceBar, ...]) -> list[dict[str, Any]]:
     return [
         {
@@ -827,6 +1280,62 @@ def _confluence_strength(gap_pct: float) -> str:
     if gap_pct <= 2.0:
         return "弱共振"
     return "不构成有效共振"
+
+
+def _confluence_score_level(score: float) -> str:
+    if score >= 85:
+        return "强共振，可进入交易池候选"
+    if score >= 70:
+        return "中共振，等待确认"
+    if score >= 50:
+        return "弱共振，只观察"
+    return "无效信号，不交易"
+
+
+def _near_price(current: float, target: float, tolerance_pct: float) -> bool:
+    if target <= 0:
+        return False
+    return abs(current - target) / target * 100 <= tolerance_pct
+
+
+def _find_bar_index(history: tuple[MasterPriceBar, ...], bar_date: str) -> int:
+    for index, bar in enumerate(history):
+        if bar.date == bar_date:
+            return index
+    return max(0, len(history) - 1)
+
+
+def _has_reversal_candle(history: tuple[MasterPriceBar, ...]) -> bool:
+    if len(history) < 2:
+        return False
+    prev = history[-2]
+    last = history[-1]
+    bullish_engulfing = last.close > last.open and prev.close < prev.open and last.close >= prev.open and last.open <= prev.close
+    long_lower_shadow = last.close > last.open and (min(last.open, last.close) - last.low) >= abs(last.close - last.open) * 1.8
+    return bullish_engulfing or long_lower_shadow
+
+
+def _has_volume_confirmation(history: tuple[MasterPriceBar, ...]) -> bool:
+    if len(history) < 21:
+        return False
+    recent_avg = sum(bar.volume for bar in history[-21:-1]) / 20
+    last = history[-1]
+    return last.volume >= recent_avg * 1.2 and last.close >= last.open
+
+
+def _risk_warning(data: FibonacciMasterInput, tools: dict[str, Any], confluence: dict[str, Any]) -> str:
+    warnings: list[str] = []
+    if data.data_status in {"延迟", "数据延迟", "失效", "数据失效"}:
+        warnings.append("数据状态异常，禁止生成新买入建议")
+    if data.current_price > tools["retracement"]["best_buy_zone"][1]:
+        warnings.append("当前价高于最佳买入波段，禁止追高")
+    if tools["trend_channel"]["two_close_breakdown"]:
+        warnings.append("连续两根收盘跌破趋势通道，结构破坏")
+    if not confluence["triple_confluence"]:
+        warnings.append("未满足三重共振，不能开仓")
+    if tools["spiral"]["standalone_signal_allowed"] is False:
+        warnings.append("螺旋和时间窗口只做辅助，不单独生成交易信号")
+    return "；".join(warnings) if warnings else "暂无硬性风险触发，仍需按买点和止损执行"
 
 
 def _pct_gap(a: float, b: float) -> float:
