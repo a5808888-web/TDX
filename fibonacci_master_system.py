@@ -69,7 +69,7 @@ def run_fibonacci_master_system(
     waves = _build_waves(data)
     levels = [level for wave in waves for level in wave["levels"]]
     confluence_zones = _detect_confluence_zones(levels, data.history)
-    primary = waves[0]
+    primary = _choose_primary_wave(waves, market_structure)
     best_buy_low = _level_price(primary, "fibonacci_retracement", 0.786)
     best_buy_high = _level_price(primary, "fibonacci_retracement", 0.618)
     buy_point1 = _build_trade_point(primary, "fibonacci_retracement", 0.786, "buy_point1", data.current_price)
@@ -219,6 +219,24 @@ def _build_waves(data: FibonacciMasterInput) -> list[dict[str, Any]]:
     for manual in data.manual_waves:
         waves.append(_build_manual_wave(manual, data.history, data.current_price))
     return waves
+
+
+def _choose_primary_wave(waves: list[dict[str, Any]], market_structure: dict[str, Any]) -> dict[str, Any]:
+    by_name = {wave["wave_name"]: wave for wave in waves}
+    scenario = market_structure["scenario"]
+    priority = {
+        "normal_uptrend_pullback": ("middle_cycle_wave", "short_cycle_wave", "auto_structure_wave"),
+        "main_uptrend_breakout": ("auto_structure_wave", "short_cycle_wave", "middle_cycle_wave"),
+        "long_term_core_review": ("long_cycle_wave", "full_history_wave", "auto_structure_wave"),
+        "sideways_range": ("middle_cycle_wave", "short_cycle_wave", "auto_structure_wave"),
+        "high_after_surge": ("short_cycle_wave", "auto_structure_wave", "middle_cycle_wave"),
+        "breakdown_downtrend": ("middle_cycle_wave", "short_cycle_wave", "full_history_wave"),
+    }.get(scenario, ("auto_structure_wave", "middle_cycle_wave", "full_history_wave"))
+    for name in priority:
+        wave = by_name.get(name)
+        if wave and wave["is_valid"]:
+            return wave
+    return waves[0]
 
 
 def _build_wave(name: str, bars: tuple[MasterPriceBar, ...], current_price: float, source: str) -> dict[str, Any]:
