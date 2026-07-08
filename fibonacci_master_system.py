@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -149,7 +150,7 @@ def fetch_akshare_history(symbol: str, adjust: str = "qfq") -> tuple[MasterPrice
         raise RuntimeError("akshare is required to fetch A-share history.") from exc
 
     code = symbol.split(".")[0]
-    payload = ak.stock_zh_a_hist(symbol=code, period="daily", adjust=adjust)
+    payload = _fetch_akshare_history_payload(ak, symbol, code, adjust)
     records = payload.to_dict("records") if hasattr(payload, "to_dict") else payload
     bars: list[MasterPriceBar] = []
     for row in records:
@@ -164,6 +165,33 @@ def fetch_akshare_history(symbol: str, adjust: str = "qfq") -> tuple[MasterPrice
     if len(bars) < 20:
         raise RuntimeError(f"AKShare returned insufficient history for {symbol}.")
     return tuple(bars)
+
+
+def _fetch_akshare_history_payload(ak: Any, symbol: str, code: str, adjust: str) -> Any:
+    errors: list[str] = []
+    for current_adjust in (adjust, ""):
+        for _ in range(3):
+            try:
+                return ak.stock_zh_a_hist(symbol=code, period="daily", adjust=current_adjust, timeout=15)
+            except Exception as exc:
+                errors.append(f"stock_zh_a_hist({current_adjust or 'none'}): {type(exc).__name__}")
+                time.sleep(1)
+    if hasattr(ak, "stock_zh_a_daily"):
+        prefixed = _akshare_daily_symbol(symbol)
+        for _ in range(3):
+            try:
+                return ak.stock_zh_a_daily(symbol=prefixed, adjust="")
+            except Exception as exc:
+                errors.append(f"stock_zh_a_daily: {type(exc).__name__}")
+                time.sleep(1)
+    raise RuntimeError("AKShare history fetch failed: " + " | ".join(errors))
+
+
+def _akshare_daily_symbol(symbol: str) -> str:
+    code = symbol.split(".")[0]
+    suffix = symbol.split(".")[-1].lower()
+    prefix = "sh" if suffix == "sh" or code.startswith(("6", "9")) else "sz"
+    return f"{prefix}{code}"
 
 
 def _validate_input(data: FibonacciMasterInput) -> None:
