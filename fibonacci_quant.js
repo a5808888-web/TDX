@@ -2,6 +2,7 @@ const state = {
   analysis: null,
   loading: false,
   requestId: 0,
+  manualAnchors: {},
 };
 
 const symbolSelect = document.getElementById("symbolSelect");
@@ -14,6 +15,14 @@ if (initialSymbol && [...symbolSelect.options].some((option) => option.value ===
 
 refreshButton.addEventListener("click", () => loadAnalysis({ force: true }));
 symbolSelect.addEventListener("change", () => loadAnalysis());
+document.addEventListener("click", (event) => {
+  if (event.target.id === "applyManualAnchor") {
+    applyManualAnchor();
+  }
+  if (event.target.id === "clearManualAnchor") {
+    clearManualAnchor();
+  }
+});
 
 loadAnalysis();
 
@@ -50,12 +59,82 @@ function renderError(error) {
 }
 
 function renderAnalysis(item) {
-  const std = item.standardized_output;
-  renderStatus(item, std);
-  renderChartHeader(item, std);
-  renderKlineChart(item, std);
-  renderSidePanel(item, std);
-  renderTables(item, std);
+  const effectiveItem = buildEffectiveAnalysis(item);
+  const std = effectiveItem.standardized_output;
+  renderStatus(effectiveItem, std);
+  renderChartHeader(effectiveItem, std);
+  renderKlineChart(effectiveItem, std);
+  renderSidePanel(effectiveItem, std);
+  renderManualAnchorPanel(effectiveItem);
+  renderTables(effectiveItem, std);
+}
+
+function buildEffectiveAnalysis(item) {
+  const anchor = state.manualAnchors[item.symbol];
+  if (!anchor) return item;
+  const clone = cloneJson(item);
+  const std = clone.standardized_output;
+  const low = Number(anchor.low);
+  const high = Number(anchor.high);
+  const range = high - low;
+  const retracement = {};
+  [0.236, 0.382, 0.5, 0.618, 0.786, 1].forEach((ratio) => {
+    retracement[formatRatioKey(ratio)] = roundPrice(high - ratio * range);
+  });
+  const extension = {};
+  [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.272, 1.382, 1.618, 2, 2.618].forEach((ratio) => {
+    extension[formatRatioKey(ratio)] = roundPrice(low + ratio * range);
+  });
+  const stopLoss = roundPrice(Math.min(low, retracement["0.786"] * 0.98));
+
+  std["主波段"] = {
+    ...(std["主波段"] || {}),
+    "A点日期": "手动锚点",
+    "A点价格": low,
+    "B点日期": "手动锚点",
+    "B点价格": high,
+    "波段方向": "上升",
+    "波段有效性": "手动复盘",
+  };
+  std["回撤斐波那契"] = retracement;
+  std["上升映射与扩展"] = extension;
+  std["买点"] = {
+    ...(std["买点"] || {}),
+    "买点1": retracement["0.786"],
+    "买点1来源": "手动主波段回撤0.786",
+    "买点2": extension["0.236"],
+    "买点2来源": "手动主波段上升映射0.236",
+    "最佳买入区间": [retracement["0.786"], retracement["0.618"]],
+  };
+  std["卖点"] = {
+    ...(std["卖点"] || {}),
+    "第一止盈": extension["1.272"],
+    "核心止盈": extension["1.618"],
+    "强趋势止盈": extension["2.618"],
+    "止损": stopLoss,
+  };
+  clone.stop_loss = {
+    ...(clone.stop_loss || {}),
+    price: stopLoss,
+    source: "手动锚点：回撤0.786下方 / 主波段低点",
+  };
+  clone.multi_wave_table = [
+    {
+      wave_name: "manual_anchor_wave",
+      low_date: "手动",
+      high_date: "手动",
+      anchor_low: low,
+      anchor_high: high,
+      retracement_0_618: retracement["0.618"],
+      retracement_0_786: retracement["0.786"],
+      extension_1_618: extension["1.618"],
+      included_in_final: true,
+    },
+    ...(clone.multi_wave_table || []),
+  ];
+  clone.manual_anchor_mode = true;
+  clone.manual_anchor = { low, high, range };
+  return clone;
 }
 
 function renderStatus(item, std) {
@@ -178,6 +257,52 @@ function renderSidePanel(item, std) {
   `;
 }
 
+function renderManualAnchorPanel(item) {
+  const anchor = state.manualAnchors[item.symbol] || {};
+  const manual = Boolean(item.manual_anchor_mode);
+  const message = manual
+    ? `当前使用手动锚点：低点 ${formatPrice(anchor.low)}，高点 ${formatPrice(anchor.high)}。历史胜率仍沿用真实历史验证，不伪造样本。`
+    : "可手动输入最高点、最低点进行复盘计算；应用后会刷新K线叠加线、买点、止损止盈和多波段明细。";
+  document.getElementById("manualAnchorPanel").innerHTML = `
+    <section class="manual-anchor-card">
+      <div class="manual-anchor-head">
+        <h2>手动锚点计算</h2>
+        <span>${manual ? "手动复盘中" : "可选"}</span>
+      </div>
+      <div class="manual-anchor-form">
+        <label>最高点
+          <input id="manualAnchorHigh" type="number" min="0" step="0.01" inputmode="decimal" value="${anchor.high ?? ""}" placeholder="输入最高点" />
+        </label>
+        <label>最低点
+          <input id="manualAnchorLow" type="number" min="0" step="0.01" inputmode="decimal" value="${anchor.low ?? ""}" placeholder="输入最低点" />
+        </label>
+        <button id="applyManualAnchor" type="button">应用并重算</button>
+        <button id="clearManualAnchor" type="button">恢复自动锚点</button>
+      </div>
+      <p id="manualAnchorMessage">${escapeHtml(message)}</p>
+    </section>
+  `;
+}
+
+function applyManualAnchor() {
+  if (!state.analysis) return;
+  const high = Number(document.getElementById("manualAnchorHigh")?.value);
+  const low = Number(document.getElementById("manualAnchorLow")?.value);
+  const message = document.getElementById("manualAnchorMessage");
+  if (!Number.isFinite(high) || !Number.isFinite(low) || high <= 0 || low <= 0 || high <= low) {
+    if (message) message.textContent = "请输入有效锚点：最高点必须大于最低点，且都要大于0。";
+    return;
+  }
+  state.manualAnchors[state.analysis.symbol] = { high: roundPrice(high), low: roundPrice(low) };
+  renderAnalysis(state.analysis);
+}
+
+function clearManualAnchor() {
+  if (!state.analysis) return;
+  delete state.manualAnchors[state.analysis.symbol];
+  renderAnalysis(state.analysis);
+}
+
 function renderTables(item, std) {
   document.getElementById("waveTable").innerHTML = table("多波段明细表", ["波段", "A点", "B点", "0.618", "0.786", "1.618", "纳入"], item.multi_wave_table.map((row) => [
     row.wave_name,
@@ -229,6 +354,18 @@ function table(title, headers, rows) {
 function formatPrice(value) {
   if (!Number.isFinite(Number(value))) return "--";
   return Number(value).toFixed(2);
+}
+
+function roundPrice(value) {
+  return Math.round(Number(value) * 100) / 100;
+}
+
+function formatRatioKey(value) {
+  return Number(value).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function escapeHtml(value) {

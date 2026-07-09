@@ -337,6 +337,81 @@ h1 {
   max-height: 540px;
 }
 
+.manual-anchor-card {
+  display: grid;
+  gap: 12px;
+}
+
+.manual-anchor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -14px -14px 0;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(21, 27, 34, 0.96);
+}
+
+.manual-anchor-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.manual-anchor-head span {
+  color: var(--yellow);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.manual-anchor-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.manual-anchor-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.manual-anchor-form input,
+.manual-anchor-form button {
+  min-height: 38px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--text);
+  background: var(--panel-2);
+  font: inherit;
+  font-weight: 800;
+}
+
+.manual-anchor-form input {
+  width: 100%;
+  padding: 0 10px;
+}
+
+.manual-anchor-form button {
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.manual-anchor-form button:first-of-type {
+  border-color: rgba(105, 167, 255, 0.58);
+  background: #23486f;
+}
+
+.manual-anchor-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .tables h2 {
   position: sticky;
   top: 0;
@@ -387,6 +462,10 @@ tbody tr:hover {
 
   .fib-controls {
     justify-content: flex-start;
+  }
+
+  .manual-anchor-form {
+    grid-template-columns: 1fr;
   }
 
   .fib-page {
