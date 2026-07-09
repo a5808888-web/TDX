@@ -170,6 +170,7 @@ class LocustV5UIContractTest(unittest.TestCase):
         self.assertIn("renderFibonacciKline", js)
         self.assertIn("601689.SH", js)
         self.assertIn("000977.SZ", js)
+        self.assertIn("600673.SH", Path("fibonacci_quant.html").read_text(encoding="utf-8"))
         self.assertIn("fibonacci_quant.html", Path("trading_cockpit.html").read_text(encoding="utf-8"))
         self.assertIn("/api/fibonacci-master", Path("fibonacci_quant.js").read_text(encoding="utf-8"))
         self.assertIn("K线图与斐波那契价格轴", Path("fibonacci_quant.js").read_text(encoding="utf-8"))

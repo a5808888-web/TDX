@@ -115,6 +115,32 @@ class FibonacciMasterSystemTest(unittest.TestCase):
         self.assertEqual(payload["analyses"][0]["current_price"], 78.17)
         self.assertEqual(payload["analyses"][0]["data_source"], "AKShare")
 
+    def test_api_helper_supports_dongyangguang_as_non_holding_watch_symbol(self):
+        fake_locked = {
+            "items": {
+                "600673.SH": {
+                    "price": {
+                        "value": 34.56,
+                        "source": "AKShare",
+                        "timestamp": "2026-07-09 10:00:00",
+                    }
+                }
+            }
+        }
+        with (
+            patch.object(app, "_locked_market_data_output", return_value=fake_locked),
+            patch.object(app, "fetch_akshare_history", return_value=sample_history()),
+            patch.object(app, "build_default_dual_ai_layer", return_value=FakeDualAILayer()),
+        ):
+            payload = app._fibonacci_master_api_output({"symbols": ["600673.SH"]})
+
+        self.assertEqual(payload["errors"], {})
+        analysis = payload["analyses"][0]
+        self.assertEqual(analysis["symbol"], "600673.SH")
+        self.assertEqual(analysis["stock_name"], "东阳光")
+        self.assertEqual(analysis["standardized_output"]["是否持仓"], False)
+        self.assertEqual(analysis["standardized_output"]["股票身份"], "朋友测算/观察")
+
 
 def sample_history() -> tuple[MasterPriceBar, ...]:
     start = date(2025, 1, 1)

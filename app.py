@@ -144,6 +144,7 @@ A_SHARE_COCKPIT_SYMBOLS = (
     "300750.SZ",
     "300274.SZ",
     "300014.SZ",
+    "600673.SH",
     "601899.SH",
     "600547.SH",
     "603993.SH",
@@ -172,6 +173,11 @@ A_SHARE_COCKPIT_SYMBOLS = (
 ACCOUNT_HOLDING_NAMES = {
     "601689.SH": "拓普集团",
     "000977.SZ": "浪潮信息",
+}
+
+STOCK_NAME_OVERRIDES = {
+    **ACCOUNT_HOLDING_NAMES,
+    "600673.SH": "东阳光",
 }
 
 _LOCKED_MARKET_CACHE: dict[str, object] | None = None
@@ -479,7 +485,7 @@ def _locked_price_for_symbol(symbol: str, items: object) -> dict[str, object]:
 
 
 def _stock_name_for_symbol(symbol: str) -> str:
-    return ACCOUNT_HOLDING_NAMES.get(symbol, symbol)
+    return STOCK_NAME_OVERRIDES.get(symbol, symbol)
 
 
 def _sector_for_symbol(symbol: str) -> str:
@@ -487,6 +493,8 @@ def _sector_for_symbol(symbol: str) -> str:
         return "人形机器人 / 具身智能"
     if symbol == "000977.SZ":
         return "AI服务器 / 算力 / AI硬件"
+    if symbol == "600673.SH":
+        return "电子元件 / 电容材料 / 新材料"
     return "A股交易池"
 
 
@@ -495,6 +503,8 @@ def _stock_identity_for_symbol(symbol: str) -> str:
         return "核心股/趋势"
     if symbol == "000977.SZ":
         return "交易池/趋势"
+    if symbol == "600673.SH":
+        return "朋友测算/观察"
     return "交易池"
 
 
@@ -507,6 +517,8 @@ def _sector_heat_for_symbol(symbol: str) -> float | None:
         return 82.0
     if symbol == "000977.SZ":
         return 86.0
+    if symbol == "600673.SH":
+        return 62.0
     return None
 
 
