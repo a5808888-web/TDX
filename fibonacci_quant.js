@@ -1,10 +1,16 @@
 const state = {
   analysis: null,
   loading: false,
+  requestId: 0,
 };
 
 const symbolSelect = document.getElementById("symbolSelect");
 const refreshButton = document.getElementById("refreshButton");
+const initialSymbol = new URLSearchParams(window.location.search).get("symbol");
+
+if (initialSymbol && [...symbolSelect.options].some((option) => option.value === initialSymbol)) {
+  symbolSelect.value = initialSymbol;
+}
 
 refreshButton.addEventListener("click", () => loadAnalysis());
 symbolSelect.addEventListener("change", () => loadAnalysis());
@@ -12,25 +18,29 @@ symbolSelect.addEventListener("change", () => loadAnalysis());
 loadAnalysis();
 
 async function loadAnalysis() {
+  const requestId = state.requestId + 1;
+  state.requestId = requestId;
   state.loading = true;
-  renderLoading();
+  const symbol = symbolSelect.value;
+  renderLoading(symbol);
   try {
-    const symbol = symbolSelect.value;
     const response = await fetch(`/api/fibonacci-master?symbols=${encodeURIComponent(symbol)}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
+    if (requestId !== state.requestId) return;
     state.analysis = payload.analyses?.[0] || null;
     if (!state.analysis) throw new Error(payload.errors?.[symbol] || "没有生成分析结果");
     renderAnalysis(state.analysis);
   } catch (error) {
+    if (requestId !== state.requestId) return;
     renderError(error);
   } finally {
-    state.loading = false;
+    if (requestId === state.requestId) state.loading = false;
   }
 }
 
-function renderLoading() {
-  document.getElementById("statusPanel").innerHTML = `<div>状态</div><strong>正在同步真实行情、历史K线、斐波那契工具与双AI复核</strong>`;
+function renderLoading(symbol) {
+  document.getElementById("statusPanel").innerHTML = `<div>状态</div><strong>正在同步 ${escapeHtml(symbol)} 的真实行情、历史K线、斐波那契工具与双AI复核</strong>`;
 }
 
 function renderError(error) {

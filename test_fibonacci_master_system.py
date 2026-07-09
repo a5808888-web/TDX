@@ -90,19 +90,14 @@ class FibonacciMasterSystemTest(unittest.TestCase):
         self.assertIn("DeepSeek", result["reason"])
 
     def test_api_helper_uses_locked_market_price_and_history(self):
-        fake_locked = {
-            "items": {
-                "000977.SZ": {
-                    "price": {
-                        "value": 78.17,
-                        "source": "AKShare",
-                        "timestamp": "2026-07-08 10:00:00",
-                    }
-                }
-            }
+        fake_price = {
+            "value": 78.17,
+            "source": "AKShare",
+            "timestamp": "2026-07-08 10:00:00",
         }
         with (
-            patch.object(app, "_locked_market_data_output", return_value=fake_locked),
+            patch.object(app, "_fresh_locked_market_items", return_value={}),
+            patch.object(app, "_locked_price_for_symbol", return_value=fake_price),
             patch.object(app, "fetch_akshare_history", return_value=sample_history()),
             patch.object(app, "build_default_dual_ai_layer", return_value=FakeDualAILayer()),
         ):
@@ -116,19 +111,14 @@ class FibonacciMasterSystemTest(unittest.TestCase):
         self.assertEqual(payload["analyses"][0]["data_source"], "AKShare")
 
     def test_api_helper_supports_dongyangguang_as_non_holding_watch_symbol(self):
-        fake_locked = {
-            "items": {
-                "600673.SH": {
-                    "price": {
-                        "value": 34.56,
-                        "source": "AKShare",
-                        "timestamp": "2026-07-09 10:00:00",
-                    }
-                }
-            }
+        fake_price = {
+            "value": 34.56,
+            "source": "AKShare",
+            "timestamp": "2026-07-09 10:00:00",
         }
         with (
-            patch.object(app, "_locked_market_data_output", return_value=fake_locked),
+            patch.object(app, "_fresh_locked_market_items", return_value={}),
+            patch.object(app, "_locked_price_for_symbol", return_value=fake_price),
             patch.object(app, "fetch_akshare_history", return_value=sample_history()),
             patch.object(app, "build_default_dual_ai_layer", return_value=FakeDualAILayer()),
         ):

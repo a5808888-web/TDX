@@ -425,8 +425,7 @@ def _fibonacci_master_api_output(query: dict[str, list[str]]) -> dict[str, objec
     except Exception:
         ai_layer = None
 
-    locked = _locked_market_data_output()
-    items = locked.get("items", {}) if isinstance(locked, dict) else {}
+    items = _fresh_locked_market_items()
     analyses: list[dict[str, object]] = []
     errors: dict[str, str] = {}
     for symbol in symbols:
@@ -477,11 +476,24 @@ def _locked_price_for_symbol(symbol: str, items: object) -> dict[str, object]:
             if isinstance(price, dict) and price.get("value"):
                 return price
     snapshot = AKShareMarketConnector().fetch_snapshot(AShareQuery(symbol=symbol, set_code=0, trend=50.0, volatility=30.0))
+    market_state = determine_a_share_market_state()
     return {
-        "value": snapshot.price,
+        "value": round(float(snapshot.price), 2),
         "source": snapshot.source.value,
-        "timestamp": _format_api_time(datetime.now(timezone.utc)),
+        "timestamp": _format_api_time(market_state.reference_time),
+        "STATUS": market_state.state.value,
+        "raw_price": round(float(snapshot.price), 2),
+        "api_price": round(float(snapshot.price), 2),
+        "ui_price": round(float(snapshot.price), 2),
+        "diff": 0,
     }
+
+
+def _fresh_locked_market_items() -> object:
+    now = datetime.now(timezone.utc)
+    if _locked_market_cache_is_fresh(now) and isinstance(_LOCKED_MARKET_CACHE, dict):
+        return _LOCKED_MARKET_CACHE.get("items", {})
+    return {}
 
 
 def _stock_name_for_symbol(symbol: str) -> str:
