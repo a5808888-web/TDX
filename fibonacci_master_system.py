@@ -657,7 +657,13 @@ def _merge_final_decision(
 
 
 def _build_ai_payload(**kwargs: Any) -> dict[str, Any]:
-    payload = dict(kwargs)
+    data = kwargs.get("data")
+    payload = {key: value for key, value in kwargs.items() if key != "data"}
+    if isinstance(data, FibonacciMasterInput):
+        payload["stock_context"] = _compact_ai_stock_context(data)
+    elif data is not None:
+        payload["stock_context"] = data
+    payload["waves"] = _compact_ai_waves(payload.get("waves", []))
     payload["instruction"] = {
         "deepseek": [
             "检查波段结构是否合理",
@@ -673,6 +679,100 @@ def _build_ai_payload(**kwargs: Any) -> dict[str, Any]:
         ],
     }
     return payload
+
+
+def _compact_ai_stock_context(data: FibonacciMasterInput) -> dict[str, Any]:
+    lows = [bar.low for bar in data.history]
+    highs = [bar.high for bar in data.history]
+    closes = [bar.close for bar in data.history]
+    recent_bars = data.history[-60:]
+    return {
+        "stock_name": data.stock_name,
+        "symbol": data.symbol,
+        "current_price": data.current_price,
+        "data_source": data.data_source,
+        "updated_at": data.updated_at,
+        "sector": data.sector,
+        "stock_identity": data.stock_identity,
+        "is_holding": data.is_holding,
+        "holding_cost": data.holding_cost,
+        "holding_quantity": data.holding_quantity,
+        "t1_locked": data.t1_locked,
+        "is_core_or_lucky": data.is_core_or_lucky,
+        "is_trade_pool": data.is_trade_pool,
+        "data_status": data.data_status,
+        "day_high": data.day_high,
+        "sector_heat": data.sector_heat,
+        "institutional_flow_score": data.institutional_flow_score,
+        "history_summary": {
+            "bar_count": len(data.history),
+            "first_date": data.history[0].date if data.history else "",
+            "last_date": data.history[-1].date if data.history else "",
+            "all_time_low": _price(min(lows)) if lows else None,
+            "all_time_high": _price(max(highs)) if highs else None,
+            "latest_close": _price(closes[-1]) if closes else None,
+        },
+        "recent_bars": [
+            {
+                "date": bar.date,
+                "open": _price(bar.open),
+                "high": _price(bar.high),
+                "low": _price(bar.low),
+                "close": _price(bar.close),
+                "volume": bar.volume,
+            }
+            for bar in recent_bars
+        ],
+    }
+
+
+def _compact_ai_waves(waves: Any) -> list[dict[str, Any]]:
+    compact: list[dict[str, Any]] = []
+    for wave in waves or []:
+        if not isinstance(wave, dict):
+            continue
+        key_levels = []
+        for level in wave.get("levels", []):
+            if not isinstance(level, dict):
+                continue
+            ratio = level.get("ratio")
+            tool = level.get("tool_name")
+            if (tool, ratio) not in {
+                ("fibonacci_retracement", 0.618),
+                ("fibonacci_retracement", 0.786),
+                ("upward_projection", 0.236),
+                ("upward_projection", 1.272),
+                ("upward_projection", 1.618),
+                ("upward_projection", 2.618),
+            }:
+                continue
+            key_levels.append(
+                {
+                    "tool_name": tool,
+                    "ratio": ratio,
+                    "price": level.get("price"),
+                    "touch_count": level.get("touch_count"),
+                    "success_count": level.get("success_count"),
+                    "failure_count": level.get("failure_count"),
+                    "success_rate": level.get("success_rate"),
+                    "confidence_by_sample": level.get("confidence_by_sample"),
+                }
+            )
+        compact.append(
+            {
+                "name": wave.get("name"),
+                "timeframe": wave.get("timeframe"),
+                "anchor_low": wave.get("anchor_low"),
+                "anchor_high": wave.get("anchor_high"),
+                "low_date": wave.get("low_date"),
+                "high_date": wave.get("high_date"),
+                "direction": wave.get("direction"),
+                "valid": wave.get("valid"),
+                "included_in_final": wave.get("included_in_final"),
+                "key_levels": key_levels,
+            }
+        )
+    return compact
 
 
 def _build_win_rate_table(levels: list[dict[str, Any]], current_price: float) -> list[dict[str, Any]]:

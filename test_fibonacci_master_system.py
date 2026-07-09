@@ -46,6 +46,11 @@ class FibonacciMasterSystemTest(unittest.TestCase):
         self.assertEqual(result["system"], "Standardized Multi-Tool Fibonacci Quant Engine")
         self.assertEqual(result["legacy_system"], "Fibonacci Master System")
         self.assertEqual(len(ai.calls), 1)
+        ai_payload = ai.calls[0].payload
+        self.assertNotIn("data", ai_payload)
+        self.assertIn("stock_context", ai_payload)
+        self.assertIn("history_summary", ai_payload["stock_context"])
+        self.assertLessEqual(len(ai_payload["stock_context"]["recent_bars"]), 60)
         tool_names = {item["tool_name"] for item in result["tool_family"]}
         self.assertIn("Fibonacci Retracement", tool_names)
         self.assertIn("Fibonacci Trend Extension", tool_names)

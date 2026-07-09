@@ -5,6 +5,8 @@ import os
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from dataclasses import asdict, is_dataclass
+from datetime import date, datetime
 from typing import Any, Callable
 
 
@@ -99,7 +101,7 @@ def _build_request_body(model: str, request: AIAnalysisRequest, api_format: str)
         "不要编造行情，不要替代真实数据源，不构成投资建议。"
     )
     user_text = json.dumps(
-        {"task": request.task, "locale": request.locale, "payload": request.payload},
+        {"task": request.task, "locale": request.locale, "payload": _json_safe(request.payload)},
         ensure_ascii=False,
     )
     if api_format == "responses":
@@ -200,6 +202,18 @@ def _infer_api_format(endpoint: str) -> str:
     return "responses" if endpoint.rstrip("/").endswith("/responses") else "chat"
 
 
+def _json_safe(value: Any) -> Any:
+    if is_dataclass(value):
+        return _json_safe(asdict(value))
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return value
+
+
 def _extract_model_content(raw: dict[str, Any]) -> str:
     output_text = raw.get("output_text")
     if isinstance(output_text, str) and output_text.strip():
@@ -226,6 +240,14 @@ def _extract_responses_output_text(output: list[Any]) -> str | None:
     for item in output:
         if not isinstance(item, dict):
             continue
+        summary = item.get("summary")
+        if isinstance(summary, list):
+            for part in summary:
+                if not isinstance(part, dict):
+                    continue
+                text = part.get("text") or part.get("content")
+                if isinstance(text, str) and text.strip():
+                    chunks.append(text.strip())
         content = item.get("content")
         if not isinstance(content, list):
             continue

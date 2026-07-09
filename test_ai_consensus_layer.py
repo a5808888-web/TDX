@@ -1,4 +1,6 @@
 import unittest
+from dataclasses import dataclass
+from datetime import date
 from unittest.mock import patch
 
 from ai_consensus_layer import (
@@ -12,6 +14,30 @@ from ai_consensus_layer import (
 
 
 class AIConsensusLayerTest(unittest.TestCase):
+    def test_request_body_accepts_dataclass_and_date_payload(self):
+        @dataclass(frozen=True)
+        class Payload:
+            symbol: str
+            trade_date: date
+
+        calls = []
+
+        def transport(url, headers, body, timeout):
+            calls.append(body)
+            return {"choices": [{"message": {"content": "ok"}}]}
+
+        provider = OpenAICompatibleProvider(
+            "DeepSeek",
+            "https://deepseek.test",
+            "deepseek-chat",
+            "deepseek-redacted",
+            transport,
+        )
+        result = provider.analyze(AIAnalysisRequest(task="检查", payload={"input": Payload("600673.SH", date(2026, 7, 9))}))
+
+        self.assertEqual(result.content, "ok")
+        self.assertIn("2026-07-09", calls[0]["messages"][1]["content"])
+
     def test_requires_two_successful_ai_responses(self):
         calls = []
 
@@ -69,6 +95,31 @@ class AIConsensusLayerTest(unittest.TestCase):
         self.assertEqual(result.content, "OK")
         self.assertIn("input", calls[0])
         self.assertNotIn("messages", calls[0])
+
+    def test_provider_reads_doubao_reasoning_summary_when_message_is_absent(self):
+        def transport(url, headers, body, timeout):
+            return {
+                "output": [
+                    {
+                        "type": "reasoning",
+                        "summary": [
+                            {"type": "summary_text", "text": "豆包结构复核完成"},
+                        ],
+                    }
+                ]
+            }
+
+        provider = OpenAICompatibleProvider(
+            "Doubao",
+            "https://ark.cn-beijing.volces.com/api/v3/responses",
+            "doubao-seed-2-0-pro-260215",
+            "doubao-redacted",
+            transport,
+            api_format="responses",
+        )
+        result = provider.analyze(AIAnalysisRequest(task="检查", payload={"symbol": "600673.SH"}))
+
+        self.assertEqual(result.content, "豆包结构复核完成")
 
     def test_default_layer_loads_provider_specific_keys(self):
         with patch.dict(
