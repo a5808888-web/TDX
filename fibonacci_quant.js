@@ -330,13 +330,29 @@ function renderTables(item, std) {
     riskRewardRow(item, "止损", std["卖点"]["止损"], item.stop_loss.source, "fibonacci_retracement", "0.786"),
   ]);
   document.getElementById("aiPanel").innerHTML = `
-    <section class="analysis-card">
+    <section class="analysis-card ai-summary-card">
       <h2>AI解释区</h2>
-      <p><strong>DeepSeek：</strong>${item.deepseek_review?.deepseek_structure_view || "等待结构复核"}</p>
-      <p><strong>豆包：</strong>${item.doubao_review?.doubao_sentiment_view || "等待情绪复核"}</p>
-      <p><strong>规则：</strong>AI不能改价格，只能解释结构和风险；最终动作由真实价格、斐波那契结构和硬性过滤规则决定。</p>
+      <p><strong>一句话：</strong>${escapeHtml(buildAiOneLineSummary(item))}</p>
     </section>
   `;
+}
+
+function buildAiOneLineSummary(item) {
+  const fusionReason = item.ai_fusion?.reason || item.reason;
+  if (fusionReason) return toOneLine(fusionReason, 120);
+  const deepseek = item.deepseek_review?.deepseek_structure_view || "";
+  const doubao = item.doubao_review?.doubao_sentiment_view || "";
+  if (deepseek.includes("AIConsensusError") || doubao.includes("AIConsensusError")) {
+    return "AI复核暂未完成，保持观察，不生成交易动作。";
+  }
+  const text = [deepseek, doubao].filter(Boolean).join("；");
+  return text ? toOneLine(text, 120) : "等待 DeepSeek 与豆包完成复核。";
+}
+
+function toOneLine(value, maxLength) {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}...`;
 }
 
 function riskRewardRow(item, label, price, source, toolName, ratio) {
