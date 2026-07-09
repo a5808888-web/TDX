@@ -31,6 +31,14 @@ const ACCOUNT_HOLDINGS = [
   },
 ];
 
+const FIBONACCI_MEASUREMENT_SYMBOLS = [
+  {
+    name: "东阳光",
+    symbol: "600673.SH",
+    status: "朋友测算 / 观察",
+  },
+];
+
 let lastSyncAt = null;
 let marketDataBySymbol = new Map();
 let currentSignals = [];
@@ -86,6 +94,9 @@ const dynamicRecalculationPipeline = [
 ];
 
 const sectorBlueprints = [
+  sector("电容材料 / 新材料 / 朋友测算", "AKShare / DeepSeek / 豆包", 62, [
+    stock("东阳光", "600673.SH", "朋友测算 / 观察", 62),
+  ]),
   sector("AI服务器 / 算力 / AI硬件", "AKShare / Eastmoney", 86, [
     stock("工业富联", "601138.SH", "中军", 92),
     stock("立讯精密", "002475.SZ", "核心供应链", 90),
@@ -3587,6 +3598,10 @@ function buildFibonacciSignals(signals, universe = []) {
     const stockItem = findUniverseStock(universe, holding.symbol);
     if (stockItem) bySymbol.set(stockItem.symbol, stockItem);
   });
+  FIBONACCI_MEASUREMENT_SYMBOLS.forEach((watchItem) => {
+    const stockItem = findUniverseStock(universe, watchItem.symbol);
+    if (stockItem) bySymbol.set(stockItem.symbol, stockItem);
+  });
   signals.forEach((signal) => {
     if (!bySymbol.has(signal.symbol)) bySymbol.set(signal.symbol, signal);
   });
@@ -3594,7 +3609,14 @@ function buildFibonacciSignals(signals, universe = []) {
 }
 
 function fibonacciMasterSymbols() {
-  return ACCOUNT_HOLDINGS.map((holding) => holding.symbol).filter(Boolean).join(",");
+  const symbols = new Set();
+  ACCOUNT_HOLDINGS.forEach((holding) => {
+    if (holding.symbol) symbols.add(holding.symbol);
+  });
+  FIBONACCI_MEASUREMENT_SYMBOLS.forEach((watchItem) => {
+    if (watchItem.symbol) symbols.add(watchItem.symbol);
+  });
+  return Array.from(symbols).join(",");
 }
 
 async function fetchFibonacciMaster() {
