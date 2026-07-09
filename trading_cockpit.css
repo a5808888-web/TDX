@@ -39,6 +39,19 @@ button,
 input,
 select {
   font: inherit;
+  color: var(--text);
+  background-color: var(--panel-2);
+}
+
+select option {
+  color: #f8fafc;
+  background-color: #111827;
+}
+
+select option:checked,
+select option:hover {
+  color: #ffffff;
+  background-color: #2563eb;
 }
 
 .sr-only {
@@ -884,7 +897,21 @@ select {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: #252b35;
+  line-height: 1.35;
+  font-weight: 720;
+}
+
+.anchor-input option {
+  min-height: 2rem;
+  color: #f8fafc;
+  background: #111827;
+  font-weight: 680;
+}
+
+.anchor-input option:checked {
+  color: #ffffff;
+  background: #2563eb;
 }
 
 .anchor-button,
