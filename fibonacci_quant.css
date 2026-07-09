@@ -352,6 +352,11 @@ h1 {
   max-height: none;
 }
 
+#riskTable {
+  flex-direction: column;
+  overflow: hidden;
+}
+
 #aiPanel .analysis-card {
   flex: 1 1 auto;
   width: 100%;
@@ -457,10 +462,23 @@ h1 {
   font-size: 20px;
 }
 
+.table-scroll {
+  min-width: 0;
+  overflow: auto;
+}
+
+#riskTable .table-scroll {
+  flex: 1 1 auto;
+}
+
 table {
-  width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+}
+
+#riskTable table {
+  min-width: 680px;
 }
 
 th,
@@ -470,6 +488,7 @@ td {
   color: var(--text);
   text-align: left;
   vertical-align: top;
+  white-space: nowrap;
 }
 
 th {

@@ -394,7 +394,7 @@ function card(title, lines) {
 }
 
 function table(title, headers, rows) {
-  return `<h2>${title}</h2><table><thead><tr>${headers.map((item) => `<th>${item}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell ?? "--"}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  return `<h2>${title}</h2><div class="table-scroll"><table><thead><tr>${headers.map((item) => `<th>${item}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell ?? "--"}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 
 function formatPrice(value) {
