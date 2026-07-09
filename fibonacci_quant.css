@@ -284,6 +284,12 @@ h1 {
   stroke-width: 1;
 }
 
+.label-guide {
+  stroke: rgba(201, 213, 225, 0.26);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
 .axis-label {
   fill: var(--muted-2);
   font-size: 12px;

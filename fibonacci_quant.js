@@ -162,10 +162,10 @@ function renderChartHeader(item, std) {
 
 function renderKlineChart(item, std) {
   const bars = item.chart_bars || [];
-  const width = 1120;
+  const width = 1180;
   const height = 620;
-  const plotWidth = 930;
-  const labelX = plotWidth + 18;
+  const plotWidth = 900;
+  const labelX = plotWidth + 24;
   const overlays = collectOverlayPrices(item, std);
   const barPrices = bars.flatMap((bar) => [bar.high, bar.low]).filter(Number.isFinite);
   const barMin = Math.min(...barPrices);
@@ -196,10 +196,12 @@ function renderKlineChart(item, std) {
     const bodyH = Math.max(2, Math.abs(closeY - openY));
     return `<line x1="${x.toFixed(1)}" y1="${highY.toFixed(1)}" x2="${x.toFixed(1)}" y2="${lowY.toFixed(1)}" class="wick ${up ? "up" : "down"}"></line><rect x="${(x - Math.max(2, step * 0.28)).toFixed(1)}" y="${bodyY.toFixed(1)}" width="${Math.max(3, step * 0.56).toFixed(1)}" height="${bodyH.toFixed(1)}" class="body ${up ? "up" : "down"}"></rect>`;
   }).join("");
+  const labelPlacements = buildOverlayLabelPlacements(visibleOverlays, scaleY, height);
   const lines = visibleOverlays.map((line, index) => {
     const y = scaleY(line.price);
-    const labelY = Math.max(18, Math.min(height - 12, y - 6 - (index % 3) * 12));
-    return `<line x1="0" y1="${y.toFixed(1)}" x2="${plotWidth}" y2="${y.toFixed(1)}" class="${line.className}"></line><text x="${labelX}" y="${labelY.toFixed(1)}" class="axis-label">${line.label} ${formatPrice(line.price)}</text>`;
+    const labelY = labelPlacements.get(index) ?? y;
+    const anchorX = plotWidth + 6;
+    return `<line x1="0" y1="${y.toFixed(1)}" x2="${plotWidth}" y2="${y.toFixed(1)}" class="${line.className}"></line><line x1="${anchorX}" y1="${y.toFixed(1)}" x2="${(labelX - 8).toFixed(1)}" y2="${labelY.toFixed(1)}" class="label-guide"></line><text x="${labelX}" y="${labelY.toFixed(1)}" class="axis-label">${line.label} ${formatPrice(line.price)}</text>`;
   }).join("");
   document.getElementById("klineChart").innerHTML = `
     <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="K线图与斐波那契价格轴">
@@ -209,6 +211,33 @@ function renderKlineChart(item, std) {
       ${lines}
     </svg>
   `;
+}
+
+function buildOverlayLabelPlacements(overlays, scaleY, height) {
+  const top = 20;
+  const bottom = height - 16;
+  const minGap = 19;
+  const placed = overlays
+    .map((line, index) => ({
+      index,
+      y: Math.max(top, Math.min(bottom, scaleY(line.price) - 4)),
+    }))
+    .sort((a, b) => a.y - b.y);
+
+  for (let i = 1; i < placed.length; i += 1) {
+    if (placed[i].y < placed[i - 1].y + minGap) {
+      placed[i].y = placed[i - 1].y + minGap;
+    }
+  }
+
+  const overflow = placed.length ? placed[placed.length - 1].y - bottom : 0;
+  if (overflow > 0) {
+    placed.forEach((item) => {
+      item.y = Math.max(top, item.y - overflow);
+    });
+  }
+
+  return new Map(placed.map((item) => [item.index, item.y]));
 }
 
 function collectOverlayPrices(item, std) {
