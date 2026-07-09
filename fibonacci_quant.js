@@ -323,11 +323,11 @@ function renderTables(item, std) {
     row.failure_count,
     `${row.success_rate}%`,
   ]));
-  document.getElementById("riskTable").innerHTML = table("止损止盈表", ["项目", "价格", "来源"], [
-    ["第一止盈", formatPrice(std["卖点"]["第一止盈"]), "上升映射/扩展1.272"],
-    ["核心止盈", formatPrice(std["卖点"]["核心止盈"]), "上升映射/扩展1.618"],
-    ["强趋势止盈", formatPrice(std["卖点"]["强趋势止盈"]), "上升映射/扩展2.618"],
-    ["止损", formatPrice(std["卖点"]["止损"]), item.stop_loss.source],
+  document.getElementById("riskTable").innerHTML = table("止损止盈表", ["项目", "价格", "来源", "胜率", "触达", "成功", "失败"], [
+    riskRewardRow(item, "第一止盈", std["卖点"]["第一止盈"], "上升映射/扩展1.272", "upward_projection", "1.272"),
+    riskRewardRow(item, "核心止盈", std["卖点"]["核心止盈"], "上升映射/扩展1.618", "upward_projection", "1.618"),
+    riskRewardRow(item, "强趋势止盈", std["卖点"]["强趋势止盈"], "上升映射/扩展2.618", "upward_projection", "2.618"),
+    riskRewardRow(item, "止损", std["卖点"]["止损"], item.stop_loss.source, "fibonacci_retracement", "0.786"),
   ]);
   document.getElementById("aiPanel").innerHTML = `
     <section class="analysis-card">
@@ -337,6 +337,36 @@ function renderTables(item, std) {
       <p><strong>规则：</strong>AI不能改价格，只能解释结构和风险；最终动作由真实价格、斐波那契结构和硬性过滤规则决定。</p>
     </section>
   `;
+}
+
+function riskRewardRow(item, label, price, source, toolName, ratio) {
+  const stat = findWinRateStat(item, toolName, ratio, price);
+  return [
+    label,
+    formatPrice(price),
+    source,
+    formatWinRate(stat),
+    stat ? stat.historical_touch_count : "--",
+    stat ? stat.success_count : "--",
+    stat ? stat.failure_count : "--",
+  ];
+}
+
+function findWinRateStat(item, toolName, ratio, price) {
+  const rows = item.win_rate_table || [];
+  const ratioText = String(ratio);
+  const candidates = rows.filter((row) => row.tool_name === toolName && String(row.ratio) === ratioText);
+  if (!candidates.length) return null;
+  const numericPrice = Number(price);
+  if (!Number.isFinite(numericPrice)) return candidates[0];
+  return [...candidates].sort((a, b) => Math.abs(Number(a.price) - numericPrice) - Math.abs(Number(b.price) - numericPrice))[0];
+}
+
+function formatWinRate(stat) {
+  if (!stat) return "样本不足";
+  const touches = Number(stat.historical_touch_count || 0);
+  if (touches < 3) return `${stat.success_rate}% / 样本不足`;
+  return `${stat.success_rate}%`;
 }
 
 function metric(label, value) {
