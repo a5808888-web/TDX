@@ -12,19 +12,21 @@ if (initialSymbol && [...symbolSelect.options].some((option) => option.value ===
   symbolSelect.value = initialSymbol;
 }
 
-refreshButton.addEventListener("click", () => loadAnalysis());
+refreshButton.addEventListener("click", () => loadAnalysis({ force: true }));
 symbolSelect.addEventListener("change", () => loadAnalysis());
 
 loadAnalysis();
 
-async function loadAnalysis() {
+async function loadAnalysis(options = {}) {
   const requestId = state.requestId + 1;
   state.requestId = requestId;
   state.loading = true;
   const symbol = symbolSelect.value;
+  const force = Boolean(options.force);
   renderLoading(symbol);
   try {
-    const response = await fetch(`/api/fibonacci-master?symbols=${encodeURIComponent(symbol)}`, { cache: "no-store" });
+    const forceQuery = force ? "&force=1" : "";
+    const response = await fetch(`/api/fibonacci-master?symbols=${encodeURIComponent(symbol)}${forceQuery}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
     if (requestId !== state.requestId) return;

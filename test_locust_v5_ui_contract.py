@@ -17,6 +17,11 @@ class LocustV5UIContractTest(unittest.TestCase):
         self.assertIn("syncCountdown", html)
         self.assertIn("anchorModePanel", html)
         self.assertIn("anchorModeState", html)
+        self.assertIn("data-manual-sync", js)
+        self.assertIn("topActionRow", js)
+        self.assertIn("手动一键同步", js)
+        self.assertIn("斐波那契专业页", js)
+        self.assertIn("force=1", js)
         self.assertIn("select option", css)
         self.assertIn(".anchor-input option", css)
         self.assertIn("#111827", css)
@@ -177,6 +182,15 @@ class LocustV5UIContractTest(unittest.TestCase):
         self.assertIn("FIBONACCI_MEASUREMENT_SYMBOLS", js)
         self.assertIn("东阳光", js)
         self.assertIn("600673.SH", js)
+        fib_html = Path("fibonacci_quant.html").read_text(encoding="utf-8")
+        fib_css = Path("fibonacci_quant.css").read_text(encoding="utf-8")
+        fib_js = Path("fibonacci_quant.js").read_text(encoding="utf-8")
+        self.assertIn("table-column", fib_html)
+        self.assertIn("table-column", fib_css)
+        self.assertIn("300308.SZ", fib_html)
+        self.assertIn("601899.SH", fib_html)
+        self.assertIn("手动一键同步", fib_html)
+        self.assertIn("force=1", fib_js)
         self.assertIn("600673.SH", Path("fibonacci_quant.html").read_text(encoding="utf-8"))
         self.assertIn("fibonacci_quant.html", Path("trading_cockpit.html").read_text(encoding="utf-8"))
         self.assertIn("/api/fibonacci-master", Path("fibonacci_quant.js").read_text(encoding="utf-8"))
@@ -315,6 +329,29 @@ class LocustV5UIContractTest(unittest.TestCase):
         self.assertEqual(item["price"]["ui_price"], 64.72)
         self.assertEqual(item["price"]["diff"], 0)
         self.assertEqual(item["price_lock"], "LOCKED")
+
+    def test_app_locked_market_data_force_refresh_bypasses_cache(self):
+        class FakeSnapshot:
+            volume = 130129724
+
+            def __init__(self, price):
+                self.price = price
+
+        fake_connector = Mock()
+        fake_connector.fetch_snapshot_map.side_effect = [
+            ({"601138.SH": FakeSnapshot(64.72)}, {}),
+            ({"601138.SH": FakeSnapshot(65.88)}, {}),
+        ]
+
+        app._LOCKED_MARKET_CACHE = None
+        app._LOCKED_MARKET_CACHE_AT = None
+        with patch("app.A_SHARE_COCKPIT_SYMBOLS", ("601138.SH",)), patch("app.AKShareMarketConnector", return_value=fake_connector):
+            first = _call_handler_json("/api/locked-market-data")
+            second = _call_handler_json("/api/locked-market-data?force=1")
+
+        self.assertEqual(first["items"]["601138.SH"]["price"]["value"], 64.72)
+        self.assertEqual(second["items"]["601138.SH"]["price"]["value"], 65.88)
+        self.assertTrue(second["manual_refresh"])
 
     def test_app_humanoid_robot_module_api_shape(self):
         payload = _call_handler_json("/api/humanoid-robot-module")

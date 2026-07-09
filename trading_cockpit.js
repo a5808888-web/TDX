@@ -63,6 +63,7 @@ let previousDynamicSnapshot = null;
 let currentChangeLog = [];
 let syncRunId = 0;
 let currentRecommendationChanged = false;
+let syncInFlight = false;
 
 const heatmapTimeframes = ["近7天", "近30天", "近1个月", "近3个月", "近6个月", "近1年"];
 
@@ -486,9 +487,10 @@ function buildUniverse(dateKey, syncTime, marketDataMap) {
   });
 }
 
-async function fetchLockedMarketData() {
+async function fetchLockedMarketData(force = false) {
   try {
-    const response = await fetch("/api/locked-market-data", { cache: "no-store" });
+    const forceQuery = force ? "?force=1" : "";
+    const response = await fetch(`/api/locked-market-data${forceQuery}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`锁定行情接口异常：${response.status}`);
     const payload = await response.json();
     lockedMarketFetchError = null;
@@ -1650,6 +1652,16 @@ function renderSummaryHeader(id, options) {
   `;
 }
 
+function topActionRow() {
+  return `
+    <section class="top-action-row" aria-label="首页快捷入口">
+      <button class="top-action-button primary" type="button" data-manual-sync="true">手动一键同步</button>
+      <a class="top-action-button" href="./fibonacci_quant.html">斐波那契专业页</a>
+      <button class="top-action-button" type="button" data-target="fib">驾驶舱斐波模块</button>
+    </section>
+  `;
+}
+
 function renderTopStatusBar(market, dataStatus) {
   const actionClass = market.action.toLowerCase();
   document.getElementById("topStatusBar").innerHTML = `
@@ -1691,6 +1703,7 @@ function renderTopStatusBar(market, dataStatus) {
       </div>
     </section>
   `;
+  document.getElementById("topStatusBar").insertAdjacentHTML("beforeend", topActionRow());
 }
 
 function renderBootState() {
@@ -3619,18 +3632,19 @@ function fibonacciMasterSymbols() {
   return Array.from(symbols).join(",");
 }
 
-async function fetchFibonacciMaster() {
+async function fetchFibonacciMaster(force = false) {
   const symbols = fibonacciMasterSymbols();
   if (!symbols) return { status: "empty", analyses: [], errors: {} };
-  const response = await fetch(`/api/fibonacci-master?symbols=${encodeURIComponent(symbols)}`, { cache: "no-store" });
+  const forceQuery = force ? "&force=1" : "";
+  const response = await fetch(`/api/fibonacci-master?symbols=${encodeURIComponent(symbols)}${forceQuery}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`Fibonacci Master HTTP ${response.status}`);
   return response.json();
 }
 
-function refreshFibonacciMaster(signals, syncTime, marketState = currentMarketState, universe = currentUniverse) {
+function refreshFibonacciMaster(signals, syncTime, marketState = currentMarketState, universe = currentUniverse, force = false) {
   currentFibonacciMaster = { status: "loading", analyses: currentFibonacciMaster.analyses || [], errors: {} };
   renderFibonacciPanel(signals, syncTime, marketState, universe);
-  fetchFibonacciMaster()
+  fetchFibonacciMaster(force)
     .then((payload) => {
       currentFibonacciMaster = { status: "ready", analyses: payload.analyses || [], errors: payload.errors || {}, generatedAt: payload.generated_at };
       renderFibonacciPanel(signals, syncTime, marketState, universe);
@@ -4219,12 +4233,19 @@ function bindAnchorControls() {
 }
 
 function bindQuickActions() {
-  document.querySelectorAll("[data-target]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const target = button.dataset.target;
-      if (target === "sync") performSync();
-      document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+  document.addEventListener("click", (event) => {
+    const manualSyncButton = event.target.closest("[data-manual-sync]");
+    if (manualSyncButton) {
+      event.preventDefault();
+      performSync({ force: true, manual: true });
+      document.getElementById("sync")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    const targetButton = event.target.closest("[data-target]");
+    if (!targetButton) return;
+    const target = targetButton.dataset.target;
+    if (target === "sync") performSync({ force: true, manual: true });
+    document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 
@@ -4233,7 +4254,10 @@ function applyStaticTranslations() {
   document.title = "蝗虫计划 V7 手机交易驾驶舱";
 }
 
-async function performSync() {
+async function performSync(options = {}) {
+  if (syncInFlight) return;
+  syncInFlight = true;
+  const force = Boolean(options.force);
   try {
     syncRunId += 1;
     const syncTime = new Date();
@@ -4241,7 +4265,7 @@ async function performSync() {
     currentMarketState = marketState;
     const dateKey = todayKey();
     const globalHeatmap = buildGlobalHeatmap(dateKey);
-    const lockedMarketData = await fetchLockedMarketData();
+    const lockedMarketData = await fetchLockedMarketData(force);
     const marketDataMap = syncMarketDataFromSources(syncTime, marketState, lockedMarketData);
     let universe = buildUniverse(dateKey, syncTime, marketDataMap);
     const initialAShareHeatmap = buildAShareHeatmap(universe, selectedHeatmapTimeframe);
@@ -4290,7 +4314,7 @@ async function performSync() {
     renderStockUniverse(universe, syncTime, marketState);
     renderTopPicks(topSignals, syncTime, marketState);
     renderFibonacciPanel(topSignals, syncTime, marketState, universe);
-    refreshFibonacciMaster(topSignals, syncTime, marketState, universe);
+    refreshFibonacciMaster(topSignals, syncTime, marketState, universe, force);
     renderAIAnalysisPanel(topSignals, syncTime, marketState);
     renderAccountPanel(topSignals, market, syncTime, marketState, universe);
     renderDynamicChangeLog(changeLog, dynamicSnapshot, marketState);
@@ -4298,6 +4322,8 @@ async function performSync() {
     renderCountdown();
   } catch (error) {
     renderSyncFailure(error);
+  } finally {
+    syncInFlight = false;
   }
 }
 
@@ -4315,6 +4341,7 @@ function renderCountdown() {
 function bootCockpit() {
   applyStaticTranslations();
   renderBootState();
+  document.getElementById("topStatusBar").insertAdjacentHTML("beforeend", topActionRow());
   performSync();
   bindQuickActions();
   setInterval(performSync, SYNC_INTERVAL_SECONDS * 1000);

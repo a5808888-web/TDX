@@ -19,8 +19,20 @@
             <option value="601689.SH">拓普集团 601689.SH</option>
             <option value="000977.SZ">浪潮信息 000977.SZ</option>
             <option value="600673.SH">东阳光 600673.SH</option>
+            <option value="601138.SH">工业富联 601138.SH</option>
+            <option value="300502.SZ">新易盛 300502.SZ</option>
+            <option value="300308.SZ">中际旭创 300308.SZ</option>
+            <option value="300394.SZ">天孚通信 300394.SZ</option>
+            <option value="000400.SZ">许继电气 000400.SZ</option>
+            <option value="600406.SH">国电南瑞 600406.SH</option>
+            <option value="002028.SZ">思源电气 002028.SZ</option>
+            <option value="603662.SH">柯力传感 603662.SH</option>
+            <option value="601899.SH">紫金矿业 601899.SH</option>
+            <option value="600547.SH">山东黄金 600547.SH</option>
+            <option value="002475.SZ">立讯精密 002475.SZ</option>
+            <option value="603019.SH">中科曙光 603019.SH</option>
           </select>
-          <button id="refreshButton" type="button">重新同步</button>
+          <button id="refreshButton" type="button">手动一键同步</button>
           <a href="./trading_cockpit.html">返回驾驶舱</a>
         </div>
       </header>
@@ -39,10 +51,14 @@
       </section>
 
       <section class="tables">
-        <div id="waveTable"></div>
-        <div id="toolTable"></div>
-        <div id="riskTable"></div>
-        <div id="aiPanel"></div>
+        <div class="table-column">
+          <div id="waveTable"></div>
+          <div id="riskTable"></div>
+        </div>
+        <div class="table-column">
+          <div id="toolTable"></div>
+          <div id="aiPanel"></div>
+        </div>
       </section>
     </main>
     <script src="./fibonacci_quant.js"></script>

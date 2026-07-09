@@ -88,6 +88,20 @@ h1 {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 
+.fib-controls select {
+  min-width: 230px;
+}
+
+.fib-controls select option {
+  color: #f8fafc;
+  background: #111827;
+}
+
+.fib-controls select option:checked {
+  color: #ffffff;
+  background: #2563eb;
+}
+
 .fib-controls button,
 .fib-controls a {
   cursor: pointer;
@@ -103,7 +117,13 @@ h1 {
 .status-panel,
 .chart-panel,
 .analysis-panel,
-.tables > div {
+.table-column {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.table-column > div {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(21, 27, 34, 0.86);
@@ -153,7 +173,7 @@ h1 {
 
 .chart-panel,
 .analysis-panel,
-.tables > div {
+.table-column > div {
   padding: 14px;
 }
 
@@ -312,7 +332,7 @@ h1 {
   align-items: start;
 }
 
-.tables > div {
+.table-column > div {
   overflow: auto;
   max-height: 540px;
 }
@@ -359,6 +379,7 @@ tbody tr:hover {
   .fib-header,
   .workspace,
   .tables,
+  .table-column,
   .status-panel,
   .chart-header {
     grid-template-columns: 1fr;

@@ -178,6 +178,18 @@ ACCOUNT_HOLDING_NAMES = {
 STOCK_NAME_OVERRIDES = {
     **ACCOUNT_HOLDING_NAMES,
     "600673.SH": "东阳光",
+    "601138.SH": "工业富联",
+    "300502.SZ": "新易盛",
+    "300308.SZ": "中际旭创",
+    "300394.SZ": "天孚通信",
+    "000400.SZ": "许继电气",
+    "600406.SH": "国电南瑞",
+    "002028.SZ": "思源电气",
+    "603662.SH": "柯力传感",
+    "601899.SH": "紫金矿业",
+    "600547.SH": "山东黄金",
+    "002475.SZ": "立讯精密",
+    "603019.SH": "中科曙光",
 }
 
 _LOCKED_MARKET_CACHE: dict[str, object] | None = None
@@ -197,7 +209,7 @@ class LocustDashboardHandler(SimpleHTTPRequestHandler):
             self._send_json(market_state_to_output(determine_a_share_market_state()))
             return
         if path == "/api/locked-market-data":
-            self._send_json(_locked_market_data_output())
+            self._send_json(_locked_market_data_output(_query_bool(query, "force")))
             return
         if path == "/api/one-click-trading-package":
             self._send_json(_sample_one_click_trading_package())
@@ -290,18 +302,25 @@ def run(host: str = "127.0.0.1", port: int = 8000) -> None:
     server.serve_forever()
 
 
-def _locked_market_data_output() -> dict[str, object]:
+def _query_bool(query: dict[str, list[str]], key: str) -> bool:
+    value = (query.get(key) or [""])[0].strip().lower()
+    return value in {"1", "true", "yes", "y", "on"}
+
+
+def _locked_market_data_output(force_refresh: bool = False) -> dict[str, object]:
     global _LOCKED_MARKET_CACHE, _LOCKED_MARKET_CACHE_AT
 
     now = datetime.now(timezone.utc)
-    if _locked_market_cache_is_fresh(now):
+    if not force_refresh and _locked_market_cache_is_fresh(now):
         return _LOCKED_MARKET_CACHE
 
     with _LOCKED_MARKET_CACHE_LOCK:
         now = datetime.now(timezone.utc)
-        if _locked_market_cache_is_fresh(now):
+        if not force_refresh and _locked_market_cache_is_fresh(now):
             return _LOCKED_MARKET_CACHE
         payload = _build_locked_market_data_payload(now)
+        if force_refresh:
+            payload["manual_refresh"] = True
         _LOCKED_MARKET_CACHE = payload
         _LOCKED_MARKET_CACHE_AT = now
         return payload
@@ -416,7 +435,7 @@ def _fibonacci_master_api_output(query: dict[str, list[str]]) -> dict[str, objec
         for item in requested.split(",")
         if item.strip()
     ) or tuple(ACCOUNT_HOLDING_NAMES)
-    symbols = tuple(symbol for symbol in symbols if symbol in A_SHARE_COCKPIT_SYMBOLS or symbol in ACCOUNT_HOLDING_NAMES)[:3]
+    symbols = tuple(symbol for symbol in symbols if symbol in A_SHARE_COCKPIT_SYMBOLS or symbol in ACCOUNT_HOLDING_NAMES)[:20]
     if not symbols:
         return {"system": "Fibonacci Master System", "analyses": (), "errors": {"symbols": "No supported A-share symbols requested."}}
 
@@ -425,7 +444,7 @@ def _fibonacci_master_api_output(query: dict[str, list[str]]) -> dict[str, objec
     except Exception:
         ai_layer = None
 
-    items = _fresh_locked_market_items()
+    items = _fresh_locked_market_items(_query_bool(query, "force"))
     analyses: list[dict[str, object]] = []
     errors: dict[str, str] = {}
     for symbol in symbols:
@@ -489,8 +508,11 @@ def _locked_price_for_symbol(symbol: str, items: object) -> dict[str, object]:
     }
 
 
-def _fresh_locked_market_items() -> object:
+def _fresh_locked_market_items(force_refresh: bool = False) -> object:
     now = datetime.now(timezone.utc)
+    if force_refresh:
+        payload = _locked_market_data_output(force_refresh=True)
+        return payload.get("items", {}) if isinstance(payload, dict) else {}
     if _locked_market_cache_is_fresh(now) and isinstance(_LOCKED_MARKET_CACHE, dict):
         return _LOCKED_MARKET_CACHE.get("items", {})
     return {}

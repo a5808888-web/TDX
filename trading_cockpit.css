@@ -179,6 +179,32 @@ select option:hover {
   line-height: 1.15;
 }
 
+.top-action-row {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.top-action-button {
+  min-height: 2.7rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  background: var(--panel);
+  font-size: 0.84rem;
+  font-weight: 860;
+  text-align: center;
+  text-decoration: none;
+}
+
+.top-action-button.primary {
+  border-color: rgba(99, 166, 255, 0.62);
+  color: #ffffff;
+  background: #24558f;
+}
+
 .mobile-cockpit {
   display: grid;
   gap: 0.75rem;
@@ -1187,6 +1213,10 @@ select option:hover {
   }
 
   .risk-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .top-action-row {
     grid-template-columns: 1fr;
   }
 
